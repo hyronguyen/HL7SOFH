@@ -1,23 +1,81 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>HL7 OML → ORU Converter</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
-    textarea { width: 100%; height: 200px; font-family: monospace; margin-bottom: 20px; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-    .output { white-space: pre-wrap; background: #fff; padding: 15px; border: 1px solid #ccc; }
-  </style>
+  <meta charset="UTF-8" />
+  <title>OML to ORU Converter</title>
 </head>
 <body>
-  <h2>Chuyển đổi bản tin HL7 OML → ORU</h2>
-  <p>Nhập nội dung bản tin OML:</p>
-  <textarea id="input"></textarea>
-  <button onclick="convertOMLtoORU()">Chuyển đổi</button>
-  <h3>Kết quả bản tin ORU:</h3>
-  <div class="output" id="output"></div>
+  <h1>HL7 OML^O21 to ORU^R01 Converter</h1>
+  <textarea id="input" rows="15" cols="120" placeholder='{"data":"MSH|^~\\&|..."}'></textarea><br><br>
+  <button onclick="convertOMLtoORU()">Convert</button><br><br>
+  <textarea id="output" rows="15" cols="120" placeholder='{"data":"MSH|^~\\&|..."}'></textarea>
 
-  <script src="Js/oml2oru.js"></script>
+  <script>
+    function convertOMLtoORU() {
+      const inputText = document.getElementById('input').value;
+      let parsed;
+      try {
+        parsed = JSON.parse(inputText);
+      } catch (e) {
+        alert('Input must be a valid JSON with a "data" field.');
+        return;
+      }
+
+      const hl7Raw = parsed.data.replace(/\\r/g, '\r');
+      const segments = hl7Raw.split('\r');
+      const msh = segments.find(s => s.startsWith('MSH')).replace('|OML^O21^OML_O21', '|ORU^R01^ORU_R01');
+      const pid = segments.find(s => s.startsWith('PID'));
+      const pv1 = segments.find(s => s.startsWith('PV1'));
+
+      const oruSegments = [];
+      oruSegments.push(msh);
+      oruSegments.push(pid);
+      oruSegments.push(pv1);
+
+      const orcGroups = [];
+      let currentGroup = [];
+      for (const seg of segments) {
+        if (seg.startsWith('ORC')) {
+          if (currentGroup.length > 0) orcGroups.push(currentGroup);
+          currentGroup = [seg];
+        } else if (seg.startsWith('OBR') || seg.startsWith('OBX') || seg.startsWith('TQ1') || seg.startsWith('DG1')) {
+          currentGroup.push(seg);
+        }
+      }
+      if (currentGroup.length > 0) orcGroups.push(currentGroup);
+
+      let obxIndex = 1;
+      for (const group of orcGroups) {
+        const orc = group.find(s => s.startsWith('ORC')).replace('|OE|', '|SC|');
+        const obr = group.find(s => s.startsWith('OBR'));
+        const fields = obr.split('|');
+        const testCode = fields[4] || '';
+        let value = 'Âm tính', unit = '', refRange = '', abnormal = 'N';
+
+        if (testCode.includes('ADA trong máu')) {
+          value = '10.2'; unit = 'U/L'; refRange = '0.0-15.0';
+        } else if (testCode.includes('ADA dịch')) {
+          value = '6.7'; unit = 'U/L'; refRange = '0.0-10.0';
+        } else if (testCode.includes('Urê máu')) {
+          value = '7.1'; unit = 'mmol/L'; refRange = '2.5-7.5';
+        }
+
+        const obrIndex = obr.split('|')[1] || obxIndex.toString();
+        const obxType = testCode.includes('PCR') ? 'ST' : 'NM';
+        const obx = `OBX|${obxIndex}|${obxType}|${testCode}||${value}|${unit}|${refRange}|${abnormal}|||F|||20250610111431||ISF914^Nguyễn Hồ Ngọc Huy||0`;
+
+        oruSegments.push(orc);
+        oruSegments.push(obr);
+        oruSegments.push(obx);
+        obxIndex++;
+      }
+
+      const finalOutput = {
+        data: oruSegments.join('\r') + '\r'
+      };
+
+      document.getElementById('output').value = JSON.stringify(finalOutput, null, 2);
+    }
+  </script>
 </body>
 </html>
