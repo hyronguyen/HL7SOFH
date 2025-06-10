@@ -1,81 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>OML to ORU Converter</title>
+   <link rel="stylesheet" href="View/Css/oml2oru.css">
 </head>
 <body>
-  <h1>HL7 OML^O21 to ORU^R01 Converter</h1>
-  <textarea id="input" rows="15" cols="120" placeholder='{"data":"MSH|^~\\&|..."}'></textarea><br><br>
-  <button onclick="convertOMLtoORU()">Convert</button><br><br>
-  <textarea id="output" rows="15" cols="120" placeholder='{"data":"MSH|^~\\&|..."}'></textarea>
 
-  <script>
-    function convertOMLtoORU() {
-      const inputText = document.getElementById('input').value;
-      let parsed;
-      try {
-        parsed = JSON.parse(inputText);
-      } catch (e) {
-        alert('Input must be a valid JSON with a "data" field.');
-        return;
-      }
+ <header>
+    <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
+    <h1>HL7SOFH - OML to ORU Converter</h1>
+  </header>
 
-      const hl7Raw = parsed.data.replace(/\\r/g, '\r');
-      const segments = hl7Raw.split('\r');
-      const msh = segments.find(s => s.startsWith('MSH')).replace('|OML^O21^OML_O21', '|ORU^R01^ORU_R01');
-      const pid = segments.find(s => s.startsWith('PID'));
-      const pv1 = segments.find(s => s.startsWith('PV1'));
+  <main>
+    <div class="panel analysis">
+      <div id="analysisPanel"></div>
+    </div>
 
-      const oruSegments = [];
-      oruSegments.push(msh);
-      oruSegments.push(pid);
-      oruSegments.push(pv1);
+    <div class="panel converter">
+      <label for="inputData">Nhập dữ liệu (OML - định dạng: {"data":"..."})</label>
+      <textarea id="inputData"></textarea>
 
-      const orcGroups = [];
-      let currentGroup = [];
-      for (const seg of segments) {
-        if (seg.startsWith('ORC')) {
-          if (currentGroup.length > 0) orcGroups.push(currentGroup);
-          currentGroup = [seg];
-        } else if (seg.startsWith('OBR') || seg.startsWith('OBX') || seg.startsWith('TQ1') || seg.startsWith('DG1')) {
-          currentGroup.push(seg);
-        }
-      }
-      if (currentGroup.length > 0) orcGroups.push(currentGroup);
+      <div class="button-group">
+        <button onclick="convertOMLtoORU()">Demo trả kết quả ORU</button>
+        <button onclick="copyOutput()">Copy kết quả</button>
+      </div>
 
-      let obxIndex = 1;
-      for (const group of orcGroups) {
-        const orc = group.find(s => s.startsWith('ORC')).replace('|OE|', '|SC|');
-        const obr = group.find(s => s.startsWith('OBR'));
-        const fields = obr.split('|');
-        const testCode = fields[4] || '';
-        let value = 'Âm tính', unit = '', refRange = '', abnormal = 'N';
+      <label for="outputData">Kết quả (ORU)</label>
+      <textarea id="outputData" readonly></textarea>
+    </div>
+  </main>
 
-        if (testCode.includes('ADA trong máu')) {
-          value = '10.2'; unit = 'U/L'; refRange = '0.0-15.0';
-        } else if (testCode.includes('ADA dịch')) {
-          value = '6.7'; unit = 'U/L'; refRange = '0.0-10.0';
-        } else if (testCode.includes('Urê máu')) {
-          value = '7.1'; unit = 'mmol/L'; refRange = '2.5-7.5';
-        }
+  <script src="Js/oml2oru.js"></script>
 
-        const obrIndex = obr.split('|')[1] || obxIndex.toString();
-        const obxType = testCode.includes('PCR') ? 'ST' : 'NM';
-        const obx = `OBX|${obxIndex}|${obxType}|${testCode}||${value}|${unit}|${refRange}|${abnormal}|||F|||20250610111431||ISF914^Nguyễn Hồ Ngọc Huy||0`;
-
-        oruSegments.push(orc);
-        oruSegments.push(obr);
-        oruSegments.push(obx);
-        obxIndex++;
-      }
-
-      const finalOutput = {
-        data: oruSegments.join('\r') + '\r'
-      };
-
-      document.getElementById('output').value = JSON.stringify(finalOutput, null, 2);
-    }
-  </script>
 </body>
 </html>
