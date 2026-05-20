@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OML to ORU Converter</title>
+  <link rel="stylesheet" href="./oml-to-oru.css">
+</head>
+<body>
+
+ <header>
+    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
+        <h1>HL7SOFH - OML to ORU Converter</h1>
+      </div>
+      <a href="../../" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 5px; font-weight: 600;">← Quay lại</a>
+    </div>
+  </header>
+
+  <main>
+    <div class="panel analysis">
+      <div id="analysisPanel"></div>
+    </div>
+
+    <div class="panel converter">
+      <label for="inputData">Nhập dữ liệu (OML - định dạng: {"data":"..."})</label>
+      <textarea id="inputData"></textarea>
+
+      <div class="button-group">
+        <button onclick="convertOMLtoORU()">Demo trả kết quả ORU</button>
+        <button onclick="copyOutput()">Copy kết quả</button>
+      </div>
+
+      <label for="outputData">Kết quả (ORU)</label>
+      <textarea id="outputData" readonly></textarea>
+    </div>
+  </main>
+
+  <script src="./oml-to-oru.js"></script>
+
+</body>
+</html>

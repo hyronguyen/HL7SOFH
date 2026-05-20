@@ -1,0 +1,125 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f4f6f9;
+  color: #333;
+}
+
+header {
+  background: linear-gradient(135deg, #2c7be5 0%, #1a5fd0 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+header img {
+  height: 40px;
+}
+
+header h1 {
+  font-size: 22px;
+  margin: 0;
+  font-weight: 700;
+}
+
+main {
+  height: calc(100vh - 80px);
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.panel {
+  background: white;
+  border: 1px solid #e0e6ed;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.analysis {
+  flex: 1;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  background: #f9fafb;
+  color: #2c3e50;
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.converter {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: 700;
+  margin-bottom: 8px;
+  margin-top: 12px;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+textarea {
+  width: 100%;
+  height: 240px;
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  resize: vertical;
+  box-sizing: border-box;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #2c7be5;
+  box-shadow: 0 0 0 3px rgba(44, 123, 229, 0.1);
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+button {
+  flex: 1;
+  padding: 12px 18px;
+  font-size: 14px;
+  background: linear-gradient(135deg, #2c7be5 0%, #1a5fd0 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(44, 123, 229, 0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
