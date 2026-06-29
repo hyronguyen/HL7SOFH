@@ -3,41 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OML to ORU Converter</title>
+  <title>HL7 LIS Sakura Checker</title>
   <link rel="stylesheet" href="./oml-to-oru.css">
 </head>
 <body>
-
- <header>
-    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
-        <h1>HL7SOFH - OML to ORU Converter</h1>
+  <header>
+    <div class="brand">
+      <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
+      <div>
+        <h1>HL7 LIS Sakura Checker</h1>
+        <p>Parse OML/ORU, check segment fields, preview DTO update status/result.</p>
       </div>
-      <a href="../../" style="color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 5px; font-weight: 600;">← Quay lại</a>
     </div>
+    <a href="../../" class="back-link">Back</a>
   </header>
 
   <main>
-    <div class="panel analysis">
-      <div id="analysisPanel"></div>
-    </div>
+    <section class="panel inspector">
+      <div id="analysisPanel" class="analysis-panel">
+        <section class="summary">
+          <div>
+            <h2>Ready</h2>
+            <p>Paste JSON {"data":"..."} hoac raw HL7 de bat dau check.</p>
+          </div>
+          <strong>HL7</strong>
+        </section>
+      </div>
+    </section>
 
-    <div class="panel converter">
-      <label for="inputData">Nhập dữ liệu (OML - định dạng: {"data":"..."})</label>
-      <textarea id="inputData"></textarea>
-
-      <div class="button-group">
-        <button onclick="convertOMLtoORU()">Demo trả kết quả ORU</button>
-        <button onclick="copyOutput()">Copy kết quả</button>
+    <section class="panel workspace">
+      <div class="toolbar">
+        <label>
+          <span>Kieu ban tin</span>
+          <select id="messageMode">
+            <option value="auto">Auto detect</option>
+            <option value="order">Gui chi dinh</option>
+            <option value="status">Cap nhat trang thai</option>
+            <option value="result">Tra ket qua</option>
+          </select>
+        </label>
+        <label>
+          <span>Status demo</span>
+          <select id="statusCode">
+            <option value="OE">OE - Da tiep nhan mau</option>
+            <option value="OR">OR - Da lay mau</option>
+            <option value="OK">OK - Chuan bi lay mau</option>
+            <option value="DC">DC - Huy mau</option>
+            <option value="NW">NW - Cho tiep nhan</option>
+          </select>
+        </label>
       </div>
 
-      <label for="outputData">Kết quả (ORU)</label>
-      <textarea id="outputData" readonly></textarea>
-    </div>
+      <label for="searchInput">Search field / segment</label>
+      <input id="searchInput" class="search-input" type="search" placeholder="VD: OBR-4, maHoSo, ket qua, GLU, PID..." autocomplete="off">
+
+      <label for="inputData">Input HL7</label>
+      <textarea id="inputData" spellcheck="false" placeholder='{"data":"MSH|^~\\&|HL7_HIS|HIS|INFINITY^2.2|Roche Diagnostics|20260629090000||OML^O21^OML_O21|12345|P|2.5\rPID|1||NB001||Nguyen Van A||19900101|M\rPV1|1|O|||||||||||||||||HS001\rORC|NW|12345||||||20260629090000|||BS01^Bac si A\rOBR|1|1001|12345|GLU^Glucose|||20260629090000\rSPM||||Mau^Mau mau\rTQ1|||1||||||R"}'></textarea>
+
+      <div class="button-group">
+        <button id="checkBtn" type="button">Kiem tra ban tin</button>
+        <button id="demoResultBtn" type="button">Demo Tra ket qua</button>
+        <button id="demoStatusBtn" type="button">Demo Cap nhat trang thai</button>
+        <button id="copyBtn" type="button">Copy output</button>
+      </div>
+
+      <label for="outputData">Output JSON</label>
+      <textarea id="outputData" spellcheck="false" readonly></textarea>
+
+    </section>
   </main>
 
   <script src="./oml-to-oru.js"></script>
-
 </body>
 </html>

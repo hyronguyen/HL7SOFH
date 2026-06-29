@@ -11,45 +11,46 @@
     * { box-sizing: border-box; }
     
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Calibri', 'Times New Roman', serif;
       margin: 0;
-      padding: 30px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      padding: 15px;
+      background: #f0f0f0;
       min-height: 100vh;
     }
     
     .container {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
       background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 40px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     
     .header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      padding-bottom: 20px;
-      border-bottom: 3px solid #3498db;
+      align-items: flex-start;
+      margin-bottom: 20px;
     }
     
     h1 {
-      color: #2c3e50;
-      margin: 0;
-      font-size: 28px;
-      font-weight: 700;
+      color: #000;
+      margin: 0 0 30px 0;
+      font-size: 20px;
+      font-weight: bold;
+      text-align: center;
+      width: 100%;
+      text-transform: uppercase;
     }
     
     .btn-back {
       background: #3498db;
       color: white;
       text-decoration: none;
-      padding: 10px 20px;
-      border-radius: 6px;
+      padding: 8px 16px;
+      border-radius: 3px;
       font-weight: 600;
+      font-size: 12px;
       transition: all 0.3s ease;
     }
     
@@ -57,159 +58,210 @@
       color: white;
       text-decoration: none;
       background: #2980b9;
-      box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
     }
     
     .upload-section {
       display: flex;
-      gap: 15px;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: #f8f9fa;
-      border-radius: 6px;
+      gap: 10px;
+      margin-bottom: 25px;
+      padding: 12px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
       align-items: center;
       flex-wrap: wrap;
     }
     
     #fileInput {
-      padding: 10px 15px;
-      border: 2px solid #ddd;
-      border-radius: 4px;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
       cursor: pointer;
       flex: 1;
-      max-width: 400px;
-      min-width: 200px;
+      min-width: 250px;
+      font-size: 13px;
     }
     
     button {
-      padding: 12px 25px;
+      padding: 8px 15px;
       background: #3498db;
       color: white;
       border: none;
-      border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       transition: all 0.3s ease;
     }
     
     button:hover {
       background: #2980b9;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
     }
     
     button:active {
       transform: translateY(0);
     }
     
+    /* Form Info Section */
+    .form-info {
+      margin-bottom: 25px;
+      border: 1px solid #000;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-bottom: 1px solid #000;
+    }
+    
+    .form-row:last-child {
+      border-bottom: none;
+    }
+    
+    .form-field {
+      padding: 8px 10px;
+      border-right: 1px solid #000;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    
+    .form-field:last-child {
+      border-right: none;
+    }
+    
+    .form-label {
+      font-weight: bold;
+      color: #000;
+      font-size: 13px;
+    }
+    
+    .form-value {
+      margin-top: 3px;
+      color: #333;
+      min-height: 20px;
+    }
+    
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
+      font-size: 13px;
+      border: 1px solid #000;
     }
     
     td, th {
-      border: 1px solid #ddd;
-      padding: 12px;
+      border: 1px solid #000;
+      padding: 8px 10px;
       vertical-align: top;
       text-align: left;
     }
     
     th {
-      background: #34495e;
-      color: white;
-      font-weight: 600;
-      width: 60px;
+      background: #d9d9d9;
+      color: #000;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    th:first-child {
+      width: 50px;
+      text-align: center;
+    }
+    
+    th:last-child {
+      width: 80px;
+      text-align: center;
+    }
+    
+    td:last-child {
+      width: 80px;
+      text-align: center;
+      font-weight: bold;
     }
     
     tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-    
-    tr:hover {
-      background: #f0f4f8;
+      background: #fff;
     }
     
     .date {
-      font-weight: 700;
-      color: #e74c3c;
-      font-size: 15px;
-      margin-bottom: 12px;
-      padding: 8px 12px;
-      background: #fef5f5;
-      border-left: 3px solid #e74c3c;
-      display: inline-block;
-      border-radius: 3px;
+      font-weight: bold;
+      color: #000;
+      font-size: 13px;
+      margin-bottom: 10px;
+      display: block;
     }
     
     .section-title {
-      font-weight: 700;
-      color: #2c3e50;
-      font-size: 14px;
-      margin: 15px 0 8px 0;
+      font-weight: bold;
+      color: #000;
+      font-size: 13px;
+      margin: 12px 0 8px 0;
+      font-style: italic;
     }
     
     ul {
-      margin: 8px 0 12px 20px;
+      margin: 5px 0 8px 20px;
       padding: 0;
     }
     
     li {
-      margin-bottom: 8px;
-      line-height: 1.6;
-      color: #333;
+      margin-bottom: 5px;
+      line-height: 1.4;
+      color: #000;
+      font-size: 13px;
     }
     
     li b {
-      color: #2c3e50;
+      color: #000;
+      font-weight: bold;
     }
     
     a {
-      color: #3498db;
-      text-decoration: none;
+      color: #0563c1;
+      text-decoration: underline;
+      font-size: 12px;
     }
     
     a:hover {
       text-decoration: underline;
-      color: #2980b9;
+      color: #0563c1;
     }
     
     .jira-link {
       display: inline-block;
-      padding: 4px 8px;
-      background: #ecf0f1;
-      border-radius: 3px;
+      padding: 2px 4px;
+      background: transparent;
+      border-radius: 0;
       font-family: 'Courier New', monospace;
       font-size: 12px;
     }
     
     /* Format styles */
     .code-inline {
-      background: #f4f4f4;
-      padding: 2px 6px;
-      border-radius: 3px;
+      background: #f0f0f0;
+      padding: 1px 3px;
+      border-radius: 0;
       font-family: 'Courier New', monospace;
       color: #c7254e;
+      font-size: 12px;
     }
     
     .code-block {
-      background: #282c34;
-      color: #abb2bf;
-      padding: 12px;
-      border-radius: 4px;
+      background: #f0f0f0;
+      color: #000;
+      padding: 8px;
+      border-radius: 0;
       overflow-x: auto;
       font-family: 'Courier New', monospace;
-      font-size: 13px;
-      margin: 8px 0;
+      font-size: 12px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
     }
     
     .note {
-      padding: 10px 12px;
-      background: #fff3cd;
-      border-left: 3px solid #ffc107;
-      border-radius: 3px;
-      margin: 8px 0;
+      padding: 8px 10px;
+      background: #fffacd;
+      border-left: 2px solid #ffc107;
+      border-radius: 0;
+      margin: 5px 0;
+      font-size: 12px;
     }
   </style>
 </head>
@@ -217,19 +269,28 @@
 
 <div class="container">
   <div class="header">
-    <h1>📋 Tạo Biên Bản Công Việc</h1>
     <a href="../../" class="btn-back">← Quay lại</a>
   </div>
+  
+  <h1>BIÊN BẢN CÔNG VIỆC</h1>
   
   <div class="upload-section">
     <input type="file" id="fileInput" accept=".csv" placeholder="Chọn file CSV..." />
     <button onclick="copyTable()">📋 Copy Bảng</button>
   </div>
-
+  
   <div id="output"></div>
 </div>
 
 <script>
+
+// ===== Extract Jira Tickets from text (QLYC- and SAKURA- only) =====
+function extractJiraTickets(text) {
+  if (!text) return [];
+  const regex = /(QLYC-\d+|SAKURA-\d+)/g;
+  const matches = text.match(regex) || [];
+  return [...new Set(matches)]; // Remove duplicates
+}
 
 // ===== Parse CSV =====
 document.getElementById("fileInput").addEventListener("change", function(e) {
@@ -241,13 +302,19 @@ document.getElementById("fileInput").addEventListener("change", function(e) {
     encoding: "UTF-8",
     complete: function(results) {
 
-      const data = results.data.map(row => ({
-        summary: (row["Summary"] || "").trim(),
-        issue: (row["Issue key"] || "").trim(),
-        description: (row["Description"] || "").trim(),
-        rawDate: (row["Date"] || "").trim(),
-        dateObj: parseDate(row["Date"])
-      }));
+      const data = results.data.map(row => {
+        const description = (row["Description"] || "").trim();
+        const extractedTickets = extractJiraTickets(description);
+        
+        return {
+          summary: (row["Summary"] || "").trim(),
+          issue: (row["Issue key"] || "").trim(),
+          description: description,
+          extractedTickets: extractedTickets,
+          rawDate: (row["Date"] || "").trim(),
+          dateObj: parseDate(row["Date"])
+        };
+      });
 
       const grouped = groupByDate(data);
       renderTable(grouped);
@@ -255,19 +322,19 @@ document.getElementById("fileInput").addEventListener("change", function(e) {
   });
 });
 
-// ===== Parse dd/MM hoặc dd/MM/yyyy =====
+// ===== Parse MM/DD hoặc MM/DD/yyyy =====
 function parseDate(str) {
   if (!str) return null;
 
   const parts = str.split("/");
 
   if (parts.length === 2) {
-    // dd/MM → fix năm (bắt buộc phải có)
-    return new Date(2026, parts[1] - 1, parts[0]);
+    // MM/DD → fix năm (bắt buộc phải có)
+    return new Date(2026, parts[0] - 1, parts[1]);
   }
 
   if (parts.length === 3) {
-    return new Date(parts[2], parts[1] - 1, parts[0]);
+    return new Date(parts[2], parts[0] - 1, parts[1]);
   }
 
   return new Date(str);
@@ -297,10 +364,12 @@ function groupByDate(data) {
 function renderTable(grouped) {
 
   let html = `
+    
     <table>
       <tr>
         <th>STT</th>
-        <th>Nội dung</th>
+        <th>Nội dung công việc</th>
+        <th>Thời gian</th>
       </tr>
   `;
 
@@ -312,10 +381,9 @@ function renderTable(grouped) {
 
       html += `
         <tr>
-          <td>${stt++}</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">${stt++}</td>
           <td>
-            <div class="date">📅 ${date}</div>
-            <div class="section-title">✓ Nội dung công việc:</div>
+            <div class="date">Ngày ${date}</div>
             <ul>
       `;
 
@@ -323,30 +391,36 @@ function renderTable(grouped) {
         html += `
           <li>
             <b>${escapeHTML(item.summary)}</b><br/>
-            <small>${formatDesc(item.description)}</small>
+            <small>${formatDesc(item.description, item.extractedTickets)}</small>
           </li>
         `;
       });
 
       html += `
             </ul>
-            <div class="section-title">🔗 Minh chứng (Jira):</div>
+            <div class="section-title">Dưới đây là minh chứng cho các việc em đã làm được trong ngày hôm này được thể hiện trên Jira: </div>
             <ul>
       `;
 
       group.items.forEach(item => {
-        html += `
-          <li>
-            <a href="https://jira.isofh.com.vn/browse/${item.issue}" class="jira-link">
-              ${item.issue}
-            </a>
-          </li>
-        `;
+        // Combine main issue with extracted tickets from description
+        const allTickets = [item.issue, ...item.extractedTickets].filter(t => t);
+        
+        allTickets.forEach(ticket => {
+          html += `
+            <li>
+              <a href="https://jira.isofh.com.vn/browse/${ticket}" class="jira-link">
+                https://jira.isofh.com.vn/browse/${ticket}
+              </a>
+            </li>
+          `;
+        });
       });
 
       html += `
             </ul>
           </td>
+          <td style="text-align: center; vertical-align: middle; font-weight: bold;">8.5</td>
         </tr>
       `;
     });
@@ -356,10 +430,19 @@ function renderTable(grouped) {
 }
 
 // ===== Format description theo Jira Markup =====
-function formatDesc(desc) {
+function formatDesc(desc, extractedTickets = []) {
   if (!desc) return "";
   
   let html = escapeHTML(desc);
+  
+  // Remove extracted Jira tickets from description
+  if (extractedTickets && extractedTickets.length > 0) {
+    extractedTickets.forEach(ticket => {
+      // Remove ticket with surrounding whitespace
+      html = html.replace(new RegExp('\\s*' + ticket.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*', 'g'), ' ');
+    });
+    html = html.trim();
+  }
   
   // Xử lý code block ```...``` trước (để tránh xung đột với * và **)
   html = html.replace(/```([^`]+)```/g, '<div class="code-block">$1</div>');
@@ -374,6 +457,9 @@ function formatDesc(desc) {
   // Inline code `text` → <code>text</code>
   html = html.replace(/`([^`]+)`/g, '<code class="code-inline">$1</code>');
   
+  // Color {color:#HEX}text{color} → <span style="color:#HEX">text</span>
+  html = html.replace(/\{color:([^}]+)\}([^{]+)\{color\}/g, '<span style="color:$1">$2</span>');
+  
   // Heading h1. h2. h3. → <h3>, <h4>, <h5>
   html = html.replace(/^h1\.\s+(.+)$/gm, '<h3 style="margin-top: 12px; margin-bottom: 6px; color: #2c3e50;">$1</h3>');
   html = html.replace(/^h2\.\s+(.+)$/gm, '<h4 style="margin-top: 10px; margin-bottom: 5px; color: #34495e;">$1</h4>');
@@ -385,8 +471,8 @@ function formatDesc(desc) {
   // Links [text](url) → <a href="url">text</a>
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   
-  // Lists: - item hoặc * item sẽ được giữ nguyên (HTML sẽ xử lý)
-  // NOTE: Chuyển dòng thành <br/> cuối cùng
+  // Limit line breaks: xóa dòng trống, chỉ giữ 1 <br/> giữa các dòng
+  html = html.replace(/\n\s*\n+/g, '<br/>');
   html = html.replace(/\n/g, '<br/>');
   
   return html;

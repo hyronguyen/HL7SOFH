@@ -149,13 +149,13 @@ async function runLoop() {
                 
                 if (clsCheckBox.checked) {
                     const danhSachDichVu = [
-                        { dichVuId: 10152, phongThucHienId: 552 }
+                        { dichVuId: 10152, phongThucHienId: 798 }
                     ];
                     await keNhieuDichVuCdha(token, patientId, dvid, danhSachDichVu);
                 }
 
-                const chiPhi = await checkChiPhi(token, patientId);
-                await thanhToan(token, chiPhi, phieuthuId);
+                //const chiPhi = await checkChiPhi(token, patientId);
+               // await thanhToan(token, chiPhi, phieuthuId);
                 log(`✅ HOÀN TẤT BN ${i}`);
 
             } catch (err) {
@@ -274,7 +274,7 @@ async function keDichVuKham(token, patientId) {
                     loaiDichVu: 10,
                     khoaChiDinhId: 52,
                     bacSiChiDinhId: 14402,
-                    thoiGianThucHien: new Date(Date.now() + 5000).toISOString()
+                    thoiGianThucHien: new Date(Date.now()).toISOString()
                 },
                 nbDvKyThuat: {
                     phongThucHienId: parseInt(phongSelect.value, 10) || null
