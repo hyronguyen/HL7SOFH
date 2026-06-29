@@ -1,0 +1,634 @@
+{
+  "source": {
+    "project": "Sakura PACS",
+    "notes": [
+      "Chi dinh PACS dung OMI_O23 de gui thong tin nguoi benh, ho so va dich vu CDHA/TDCN sang PACS.",
+      "Cap nhat trang thai dung OMI_O23/OML_O21 de tra trang thai tiep nhan, thuc hien hoac huy ve HIS.",
+      "Tra ket qua dung ORU_R01 de gui mo ta, ket luan, phieu ket qua, link anh va canh bao ve HIS.",
+      "Mot so truong phu thuoc thiet lap chung nhu tien to ma nguoi benh, gio sinh, so dien thoai, MSH-3/MSH-4."
+    ]
+  },
+  "messageTypes": {
+    "order": {
+      "label": "Ban tin gui chi dinh PACS",
+      "endpoint": "GET /pacs/chi-dinh",
+      "hl7": "OMI^O23^OMI_O23",
+      "direction": "HIS -> PACS",
+      "requiredSegments": ["MSH", "PID", "PV1", "ORC", "OBR"],
+      "optionalSegments": ["IN1", "TQ1"]
+    },
+    "status": {
+      "label": "Ban tin cap nhat trang thai PACS",
+      "endpoint": "POST /pacs/trang-thai",
+      "hl7": "OMI^O23^OMI_O23 hoac OML^O21^OML_O21",
+      "direction": "PACS -> HIS",
+      "requiredSegments": ["MSH", "PID", "ORC", "OBR"],
+      "optionalSegments": ["PV1", "TQ1"]
+    },
+    "result": {
+      "label": "Ban tin tra ket qua PACS",
+      "endpoint": "POST /pacs/ket-qua",
+      "hl7": "ORU^R01^ORU_R01",
+      "direction": "PACS -> HIS",
+      "requiredSegments": ["MSH", "PID", "ORC", "OBR", "OBX"],
+      "optionalSegments": ["PV1", "NTE"]
+    },
+    "patient": {
+      "label": "Ban tin cap nhat nguoi benh",
+      "endpoint": "PACS update patient",
+      "hl7": "ADT^A08^ADT_A01",
+      "direction": "HIS -> PACS",
+      "requiredSegments": ["MSH", "PID", "PV1"],
+      "optionalSegments": ["IN1"]
+    }
+  },
+  "statusMap": {
+    "OR": {
+      "hisStatus": "DA_TIEP_NHAN/DA_LAY_MAU",
+      "note": "Da thuc hien hoac da lay mau voi dich vu xet nghiem kem theo."
+    },
+    "SC": {
+      "hisStatus": "DA_TIEP_NHAN",
+      "note": "Da tiep nhan dich vu."
+    },
+    "BX": {
+      "hisStatus": "DA_TIEP_NHAN",
+      "note": "Da tiep nhan dich vu."
+    },
+    "CA": {
+      "hisStatus": "CHO_TIEP_NHAN",
+      "note": "Huy tiep nhan, quay ve cho tiep nhan."
+    },
+    "RC": {
+      "hisStatus": "CHO_TIEP_NHAN",
+      "note": "Huy tiep nhan, quay ve cho tiep nhan."
+    }
+  },
+  "obxResultMap": {
+    "1": {
+      "dto": "ketQua",
+      "note": "Mo ta/ket qua chinh."
+    },
+    "2": {
+      "dto": "ketLuan",
+      "note": "Ket luan cua bac si doc ket qua."
+    },
+    "3": {
+      "dto": "phieuKetQua",
+      "note": "Noi dung phieu ket qua."
+    },
+    "4": {
+      "dto": "anhKetQua",
+      "note": "Link anh ket qua chinh."
+    },
+    "5": {
+      "dto": "canhBao",
+      "note": "Canh bao ket qua."
+    },
+    "6": {
+      "dto": "anhKetQua2",
+      "note": "Link anh ket qua bo sung."
+    }
+  },
+  "fields": [
+    {
+      "message": "common",
+      "segment": "MSH",
+      "field": 9,
+      "component": 0,
+      "path": "MSH-9",
+      "dto": "messageType",
+      "label": "Loai ban tin",
+      "note": "Xac dinh ban tin chi dinh, trang thai, ket qua hay cap nhat nguoi benh.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "MSH",
+      "field": 10,
+      "component": 0,
+      "path": "MSH-10",
+      "dto": "soPhieu",
+      "label": "So phieu",
+      "note": "Ma dieu khien ban tin, thuong trung so phieu khi gui chi dinh.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "PID",
+      "field": 3,
+      "component": 1,
+      "path": "PID-3.1",
+      "dto": "maHoSo",
+      "label": "Ma ho so",
+      "note": "Ma ho so/dot dieu tri de doi chieu nguoi benh.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "PID",
+      "field": 3,
+      "component": 2,
+      "path": "PID-3.2",
+      "dto": "maNb",
+      "label": "Ma nguoi benh",
+      "note": "Ma nguoi benh, co the co tien to theo thiet lap chung.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "PID",
+      "field": 5,
+      "component": 1,
+      "path": "PID-5.1",
+      "dto": "tenNb",
+      "label": "Ho ten nguoi benh",
+      "note": "Ho ten nguoi benh hien thi tren PACS.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "PID",
+      "field": 7,
+      "component": 1,
+      "path": "PID-7.1",
+      "dto": "ngaySinh",
+      "label": "Ngay sinh",
+      "note": "Ngay sinh, co the gom gio sinh theo thiet lap.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "PID",
+      "field": 8,
+      "component": 1,
+      "path": "PID-8.1",
+      "dto": "gioiTinh",
+      "label": "Gioi tinh",
+      "note": "M nam, F nu.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "PV1",
+      "field": 2,
+      "component": 1,
+      "path": "PV1-2.1",
+      "dto": "doiTuongKcb",
+      "label": "Loai luu tru",
+      "note": "I noi tru, O ngoai tru.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "PV1",
+      "field": 19,
+      "component": 1,
+      "path": "PV1-19.1",
+      "dto": "maHoSo",
+      "label": "Ma ho so tren lan dieu tri",
+      "note": "Ma ho so cua lan dieu tri.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "ORC",
+      "field": 1,
+      "component": 1,
+      "path": "ORC-1.1",
+      "dto": "orderControl",
+      "label": "Ma lenh chi dinh",
+      "note": "NW gui chi dinh moi, CA huy chi dinh.",
+      "required": true
+    },
+    {
+      "message": "status",
+      "segment": "ORC",
+      "field": 1,
+      "component": 1,
+      "path": "ORC-1.1",
+      "dto": "trangThai",
+      "label": "Ma trang thai PACS",
+      "note": "OR/SC/BX/CA/RC dung de doi trang thai dich vu.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 2,
+      "component": 1,
+      "path": "ORC-2.1",
+      "dto": "soPhieu",
+      "label": "So phieu",
+      "note": "So phieu/ma chi dinh tren HIS.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 3,
+      "component": 1,
+      "path": "ORC-3.1",
+      "dto": "maPhongThucHien",
+      "label": "Phong thuc hien",
+      "note": "Ma phong thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 7,
+      "component": 1,
+      "path": "ORC-7.1",
+      "dto": "maKetNoi",
+      "label": "Ma ket noi tren nhom lenh",
+      "note": "Ma ket noi hoac ma dich vu trong nhom chi dinh.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 9,
+      "component": 1,
+      "path": "ORC-9.1",
+      "dto": "thoiGianGiaoDich",
+      "label": "Thoi gian giao dich",
+      "note": "Thoi gian phat sinh ban tin.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 12,
+      "component": 1,
+      "path": "ORC-12.1",
+      "dto": "maBacSiChiDinh",
+      "label": "Ma bac si chi dinh",
+      "note": "Bac si chi dinh dich vu.",
+      "required": false
+    },
+    {
+      "message": "status",
+      "segment": "ORC",
+      "field": 15,
+      "component": 1,
+      "path": "ORC-15.1",
+      "dto": "thoiGianTiepNhan",
+      "label": "Thoi gian tiep nhan",
+      "note": "Thoi gian PACS tiep nhan dich vu.",
+      "required": false
+    },
+    {
+      "message": "status",
+      "segment": "ORC",
+      "field": 15,
+      "component": 1,
+      "path": "ORC-15.1",
+      "dto": "thoiGianTiepNhanMau",
+      "label": "Thoi gian tiep nhan mau",
+      "note": "Dung cho dich vu xet nghiem di qua PACS.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 16,
+      "component": 1,
+      "path": "ORC-16.1",
+      "dto": "thoiGianThucHien",
+      "label": "Thoi gian thuc hien",
+      "note": "Thoi gian thuc hien du kien hoac da thuc hien.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "ORC",
+      "field": 21,
+      "component": 1,
+      "path": "ORC-21.1",
+      "dto": "maPhongThucHien",
+      "label": "Phong thuc hien",
+      "note": "Phong/khu vuc thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 1,
+      "component": 1,
+      "path": "OBR-1.1",
+      "dto": "sttObr",
+      "label": "STT OBR",
+      "note": "So thu tu dich vu trong ban tin.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 2,
+      "component": 1,
+      "path": "OBR-2.1",
+      "dto": "soKetNoi",
+      "label": "So ket noi",
+      "note": "ID ket noi cua dich vu CDHA/TDCN voi PACS.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 4,
+      "component": 1,
+      "path": "OBR-4.1",
+      "dto": "maKetNoi",
+      "label": "Ma ket noi dich vu",
+      "note": "Ma dich vu gui sang PACS.",
+      "required": true
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 4,
+      "component": 2,
+      "path": "OBR-4.2",
+      "dto": "tenDichVu",
+      "label": "Ten dich vu",
+      "note": "Ten dich vu CDHA/TDCN.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 6,
+      "component": 1,
+      "path": "OBR-6.1",
+      "dto": "thoiGianThucHien",
+      "label": "Thoi gian tren OBR",
+      "note": "Mot so PACS gui thoi gian du kien/thuc hien tai field nay.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 7,
+      "component": 1,
+      "path": "OBR-7.1",
+      "dto": "thoiGianTiepNhan/thucHien",
+      "label": "Thoi gian quan sat",
+      "note": "Thoi gian tiep nhan hoac thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 13,
+      "component": 1,
+      "path": "OBR-13.1",
+      "dto": "chanDoan",
+      "label": "Chan doan/mo ta",
+      "note": "Chan doan va mo ta chi dinh gui sang PACS.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 18,
+      "component": 1,
+      "path": "OBR-18.1",
+      "dto": "khoaChiDinh",
+      "label": "Khoa chi dinh",
+      "note": "Khoa chi dinh dich vu.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 20,
+      "component": 1,
+      "path": "OBR-20.1",
+      "dto": "khoaThucHien",
+      "label": "Khoa thuc hien",
+      "note": "Khoa thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBR",
+      "field": 22,
+      "component": 1,
+      "path": "OBR-22.1",
+      "dto": "thoiGianCoKetQua",
+      "label": "Thoi gian co ket qua",
+      "note": "Thoi gian PACS co ket qua.",
+      "required": false
+    },
+    {
+      "message": "common",
+      "segment": "OBR",
+      "field": 24,
+      "component": 1,
+      "path": "OBR-24.1",
+      "dto": "modality",
+      "label": "Modality",
+      "note": "Loai may/ky thuat: DX, CT, MR, US...",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 30,
+      "component": 1,
+      "path": "OBR-30.1",
+      "dto": "hinhThucDiChuyen",
+      "label": "Hinh thuc di chuyen",
+      "note": "PORT tai khoa, WALK nguoi benh tu di chuyen.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 31,
+      "component": 1,
+      "path": "OBR-31.1",
+      "dto": "chanDoan",
+      "label": "Ly do chi dinh",
+      "note": "Chan doan/ly do chi dinh.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBR",
+      "field": 32,
+      "component": 1,
+      "path": "OBR-32.1",
+      "dto": "maNguoiDocKetQua",
+      "label": "Nguoi doc ket qua",
+      "note": "Bac si/nguoi doc ket qua.",
+      "required": false
+    },
+    {
+      "message": "status",
+      "segment": "OBR",
+      "field": 34,
+      "component": 1,
+      "path": "OBR-34.1",
+      "dto": "maNguoiThucHien",
+      "label": "Nguoi thuc hien",
+      "note": "Nguoi thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBR",
+      "field": 34,
+      "component": 1,
+      "path": "OBR-34.1",
+      "dto": "maNguoiThucHien",
+      "label": "Nguoi thuc hien",
+      "note": "Nguoi thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBR",
+      "field": 35,
+      "component": 1,
+      "path": "OBR-35.1",
+      "dto": "maDieuDuong",
+      "label": "Dieu duong/thu ky",
+      "note": "Nguoi ghi nhan hoac dieu duong lien quan.",
+      "required": false
+    },
+    {
+      "message": "status",
+      "segment": "OBR",
+      "field": 38,
+      "component": 1,
+      "path": "OBR-38.1",
+      "dto": "maPhuThucHien1",
+      "label": "Nguoi phu thuc hien",
+      "note": "Nguoi phu thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBR",
+      "field": 38,
+      "component": 1,
+      "path": "OBR-38.1",
+      "dto": "maPhuThucHien1",
+      "label": "Nguoi phu thuc hien",
+      "note": "Nguoi phu thuc hien dich vu.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 39,
+      "component": 2,
+      "path": "OBR-39.2",
+      "dto": "ghiChu",
+      "label": "Ghi chu",
+      "note": "Ghi chu cho chi dinh.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 9,
+      "component": 1,
+      "path": "OBR-9.1",
+      "dto": "trangThaiThanhToan",
+      "label": "Trang thai thanh toan",
+      "note": "1/0 cho biet dich vu da thanh toan hay chua neu co gui.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "OBR",
+      "field": 9,
+      "component": 2,
+      "path": "OBR-9.2",
+      "dto": "ghiChuThanhToan",
+      "label": "Ghi chu thanh toan",
+      "note": "Mo ta dich vu da thanh toan hay chua.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "TQ1",
+      "field": 3,
+      "component": 1,
+      "path": "TQ1-3.1",
+      "dto": "soLuong",
+      "label": "So luong",
+      "note": "So luong dich vu.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "TQ1",
+      "field": 7,
+      "component": 1,
+      "path": "TQ1-7.1",
+      "dto": "thoiGianChiDinh",
+      "label": "Thoi gian chi dinh",
+      "note": "Thoi gian chi dinh ban dau.",
+      "required": false
+    },
+    {
+      "message": "order",
+      "segment": "TQ1",
+      "field": 9,
+      "component": 1,
+      "path": "TQ1-9.1",
+      "dto": "uuTien",
+      "label": "Muc uu tien",
+      "note": "S cap cuu, A uu tien.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBX",
+      "field": 1,
+      "component": 1,
+      "path": "OBX-1.1",
+      "dto": "loaiKetQuaPacs",
+      "label": "Loai dong ket qua",
+      "note": "1 mo ta, 2 ket luan, 3 phieu, 4 anh, 5 canh bao, 6 anh bo sung.",
+      "required": true
+    },
+    {
+      "message": "result",
+      "segment": "OBX",
+      "field": 2,
+      "component": 1,
+      "path": "OBX-2.1",
+      "dto": "valueType",
+      "label": "Kieu ket qua",
+      "note": "Thuong dung TX cho noi dung PACS.",
+      "required": false
+    },
+    {
+      "message": "result",
+      "segment": "OBX",
+      "field": 5,
+      "component": 1,
+      "path": "OBX-5.1",
+      "dto": "giaTriKetQua",
+      "label": "Gia tri ket qua",
+      "note": "Noi dung ket qua theo loai dong OBX.",
+      "required": true
+    },
+    {
+      "message": "result",
+      "segment": "OBX",
+      "field": 18,
+      "component": 1,
+      "path": "OBX-18.1",
+      "dto": "maMay",
+      "label": "Ma may",
+      "note": "Ma may sinh ket qua neu PACS co gui.",
+      "required": false
+    }
+  ]
+}

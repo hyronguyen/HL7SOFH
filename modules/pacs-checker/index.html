@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PACS HL7 Sakura Checker</title>
+  <link rel="stylesheet" href="./pacs-checker.css">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
+      <div>
+        <h1>PACS HL7 Sakura Checker</h1>
+        <p>Check OMI/OML/ORU, search wiki fields, inspect repeated segments.</p>
+      </div>
+    </div>
+    <a href="../../" class="back-link">Back</a>
+  </header>
+
+  <main>
+    <section class="panel inspector">
+      <div id="analysisPanel" class="analysis-panel">
+        <section class="summary">
+          <div>
+            <h2>Wiki field PACS</h2>
+            <p>Search field truc tiep hoac paste ban tin PACS de parse.</p>
+          </div>
+          <strong>HL7 v2.7</strong>
+        </section>
+      </div>
+    </section>
+
+    <section class="panel workspace">
+      <div class="toolbar">
+        <label>
+          <span>Kieu ban tin</span>
+          <select id="messageMode">
+            <option value="auto">Auto detect</option>
+            <option value="order">Gui chi dinh</option>
+            <option value="status">Cap nhat trang thai</option>
+            <option value="result">Tra ket qua</option>
+            <option value="patient">Cap nhat nguoi benh</option>
+          </select>
+        </label>
+        <label>
+          <span>Status demo</span>
+          <select id="statusCode">
+            <option value="SC">SC - Da tiep nhan/thuc hien</option>
+            <option value="OR">OR - Da thuc hien/lay mau</option>
+            <option value="BX">BX - Da tiep nhan</option>
+            <option value="CA">CA - Huy/cho tiep nhan</option>
+            <option value="RC">RC - Huy/cho tiep nhan</option>
+          </select>
+        </label>
+      </div>
+
+      <label for="searchInput">Search field / segment / wiki</label>
+      <input id="searchInput" type="search" placeholder="VD: OBR-4, soKetNoi, modality, ketLuan, OBX-4..." autocomplete="off">
+
+      <label for="inputData">Input PACS HL7</label>
+      <textarea id="inputData" spellcheck="false" placeholder='{"Hl7Data":"MSH|^~\\&|SAKURA|TTTM|PACS|TTTM|20260629090000||OMI^O23^OMI_O23|12345|P|2.7\rPID|1||HS001^99NB001||Nguyen Van A||19900101|M\rPV1|1|O|||||||||||||||||HS001\rORC|NW|12345||XRAY01^HIS|CM||||20260629090000|||BS01^Bac si A|||20260629090000|20260629090000\rTQ1|1||1|||||20260629090000||R\rOBR|1|90001|PK01^Phong chup|XR001^X-quang nguc^XR||||20260629090000||||Chan doan so bo|||||KCD-Khoa CD||||||DX|WALK"}'></textarea>
+
+      <div class="button-group">
+        <button id="checkBtn" type="button">Check / Parse</button>
+        <button id="demoResultBtn" type="button">Demo ORU result</button>
+        <button id="demoStatusBtn" type="button">Demo status</button>
+        <button id="copyBtn" type="button">Copy output</button>
+      </div>
+
+      <label for="outputData">Output JSON</label>
+      <textarea id="outputData" spellcheck="false" readonly></textarea>
+
+      <aside id="knowledgePanel" class="knowledge-panel"></aside>
+    </section>
+  </main>
+
+  <script src="./pacs-checker.js"></script>
+</body>
+</html>
