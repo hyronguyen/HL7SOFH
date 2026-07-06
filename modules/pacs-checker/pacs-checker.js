@@ -90,16 +90,6 @@ function bindControls() {
   });
 }
 
-function updateKnowledgeSummary() {
-  const panel = document.getElementById("knowledgePanel");
-  const notes = hl7Knowledge.source?.notes || [];
-  panel.innerHTML = `
-    <p>Knowledge PACS Sakura</p>
-    <ul>
-      ${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}
-    </ul>
-  `;
-}
 
 function readInputData() {
   const rawValue = document.getElementById("inputData").value.trim();

@@ -31,6 +31,9 @@ body {
 }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   min-height: 76px;
   padding: 14px 22px;
   color: #ffffff;
@@ -100,7 +103,7 @@ main {
 }
 
 .inspector {
-  overflow: auto;
+  overflow: hidden;
   padding: 16px;
 }
 
