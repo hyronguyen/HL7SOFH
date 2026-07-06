@@ -294,10 +294,10 @@
       "segment": "ORC",
       "field": 16,
       "component": 1,
-      "path": "ORC-16.1",
-      "dto": "thoiGianThucHien",
-      "label": "Thoi gian thuc hien",
-      "note": "Thoi gian thuc hien du kien hoac da thuc hien.",
+      "path": "ORC-16.1", 
+      "dto": "maLoaiHinhThanhToan",
+      "label": "Loai hinh thanh toan",
+      "note": "Loai hinh thanh toan cho dich vu.",
       "required": false
     },
     {
@@ -309,6 +309,17 @@
       "dto": "maPhongThucHien",
       "label": "Phong thuc hien",
       "note": "Phong/khu vuc thuc hien dich vu.",
+      "required": false
+    },
+     {
+      "message": "common",
+      "segment": "ORC",
+      "field": 27,
+      "component": 1,
+      "path": "ORC-27.1",
+      "dto": "thoiGianThucHien",
+      "label": "Thoi gian thuc hien",
+      "note": "Thoi gian thuc hien dich vu.",
       "required": false
     },
     {
