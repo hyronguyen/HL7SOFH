@@ -12,7 +12,7 @@
       <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
       <div>
         <h1>PACS HL7 Sakura Checker</h1>
-        <p>Check OMI/OML/ORU, search wiki fields, inspect repeated segments.</p>
+        <p>Check OMI/OML/ORU.</p>
       </div>
     </div>
     <a href="../../" class="back-link">Back</a>
@@ -62,16 +62,15 @@
       <textarea id="inputData" spellcheck="false" placeholder='{"Hl7Data":"MSH|^~\\&|SAKURA|TTTM|PACS|TTTM|20260629090000||OMI^O23^OMI_O23|12345|P|2.7\rPID|1||HS001^99NB001||Nguyen Van A||19900101|M\rPV1|1|O|||||||||||||||||HS001\rORC|NW|12345||XRAY01^HIS|CM||||20260629090000|||BS01^Bac si A|||20260629090000|20260629090000\rTQ1|1||1|||||20260629090000||R\rOBR|1|90001|PK01^Phong chup|XR001^X-quang nguc^XR||||20260629090000||||Chan doan so bo|||||KCD-Khoa CD||||||DX|WALK"}'></textarea>
 
       <div class="button-group">
-        <button id="checkBtn" type="button">Check / Parse</button>
-        <button id="demoResultBtn" type="button">Demo ORU result</button>
-        <button id="demoStatusBtn" type="button">Demo status</button>
+        <button id="checkBtn" type="button">Kiem tra ban tin</button>
+        <button id="demoResultBtn" type="button">Demo Tra ket qua</button>
+        <button id="demoStatusBtn" type="button">Demo Cap nhat trang thai</button>
         <button id="copyBtn" type="button">Copy output</button>
       </div>
 
       <label for="outputData">Output JSON</label>
       <textarea id="outputData" spellcheck="false" readonly></textarea>
 
-      <aside id="knowledgePanel" class="knowledge-panel"></aside>
     </section>
   </main>
 
