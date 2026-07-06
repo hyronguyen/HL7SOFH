@@ -280,9 +280,20 @@
       "field": 15,
       "component": 1,
       "path": "ORC-15.1",
+      "dto": "thoiGianLayMau",
+      "label": "Thoi gian lay mau",
+      "note": "Thoi gian mau duoc lay tai phong lay mau.",
+      "required": false
+    },
+      {
+      "message": "status",
+      "segment": "ORC",
+      "field": 36,
+      "component": 1,
+      "path": "ORC-36.1",
       "dto": "thoiGianTiepNhanMau",
       "label": "Thoi gian tiep nhan mau",
-      "note": "Thoi gian mau duoc tiep nhan tai phong xet nghiem.",
+      "note": "Thoi gian mau duoc tiep nhan tai phong tiep nhan mau.",
       "required": false
     },
     {
