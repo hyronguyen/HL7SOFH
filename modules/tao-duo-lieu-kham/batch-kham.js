@@ -345,7 +345,7 @@ async function keNhieuDichVuCdha(token, patientId, dvId, danhSachDichVu) {
         }
     }
 }
-
+//note
 async function keThuoc(token, patientId, dvid) {
     try {
 
