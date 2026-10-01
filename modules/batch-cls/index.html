@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QMS CLS Test Console</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { --ink:#172033; --muted:#667085; --brand:#3559e0; --panel:#fff; --bg:#f3f6fb; }
+        body { background:var(--bg); color:var(--ink); min-height:100vh; }
+        .topbar { background:linear-gradient(120deg,#1f3c88,#3559e0); color:#fff; }
+        .shell { max-width:1500px; margin:auto; }
+        .card { border:0; box-shadow:0 5px 18px rgba(31,60,136,.08); }
+        .card-header { background:#fff; font-weight:700; border-bottom:1px solid #e8ecf4; }
+        .form-label { font-size:.86rem; font-weight:650; margin-bottom:.25rem; }
+        .form-text, .small-muted { color:var(--muted); font-size:.78rem; }
+        textarea.code, pre { font-family:Consolas,"Courier New",monospace; font-size:.82rem; }
+        pre { white-space:pre-wrap; max-height:360px; overflow:auto; background:#101828; color:#d1e9ff; padding:1rem; border-radius:.5rem; }
+        .status-dot { width:.65rem; height:.65rem; border-radius:50%; display:inline-block; background:#98a2b3; }
+        .status-dot.ok { background:#12b76a; } .status-dot.bad { background:#f04438; }
+        .sticky-actions { position:sticky; bottom:0; background:rgba(255,255,255,.94); backdrop-filter:blur(8px); border-top:1px solid #e8ecf4; padding:.75rem; z-index:5; }
+        .table-wrap { max-height:520px; overflow:auto; }
+        .table thead th { position:sticky; top:0; background:#eef2ff; z-index:2; white-space:nowrap; }
+        .badge-pass { background:#d1fadf; color:#05603a; } .badge-fail { background:#fee4e2; color:#b42318; }
+        .badge-skip { background:#f2f4f7; color:#344054; }
+        .danger-note { border-left:4px solid #f79009; background:#fffaeb; }
+    </style>
+</head>
+<body>
+<header class="topbar py-3 mb-4">
+    <div class="shell px-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <div>
+            <h1 class="h4 mb-1">QMS CLS Test Console</h1>
+            <div class="opacity-75 small">Bộ công cụ test SAKURA-115216 · CLS thường · Kiosk 2 · Cấu hình dải STT</div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span id="connectionDot" class="status-dot"></span>
+            <span id="connectionText" class="small">Chưa kết nối</span>
+            <a href="../../" class="btn btn-sm btn-light">Quay lại</a>
+        </div>
+    </div>
+</header>
+
+<main class="shell px-3 pb-5">
+    <div class="alert danger-note py-2">
+        Công cụ này tạo người bệnh và chỉ định thật trên môi trường đang chọn. Không lưu token/mật khẩu vào trình duyệt.
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">1. Kết nối và xác thực</div>
+                <div class="card-body row g-3">
+                    <div class="col-12">
+                        <label class="form-label" for="apiBase">API base URL</label>
+                        <input id="apiBase" class="form-control" value="https://api-sakura-test.isofh.vn/api/his/v1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="username">Tài khoản</label>
+                        <input id="username" class="form-control" autocomplete="username">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="password">Mật khẩu / mã băm đăng nhập</label>
+                        <input id="password" type="password" class="form-control" autocomplete="current-password">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="manualToken">Bearer token có sẵn (ưu tiên nếu nhập)</label>
+                        <textarea id="manualToken" class="form-control code" rows="2" placeholder="Không nhập chữ Bearer"></textarea>
+                    </div>
+                    <div class="col-md-6 form-check ms-2">
+                        <input id="confirmTestEnv" class="form-check-input" type="checkbox">
+                        <label class="form-check-label" for="confirmTestEnv">Xác nhận đây là môi trường test/dev</label>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button id="btnLogin" class="btn btn-primary">Kiểm tra đăng nhập</button>
+                        <button id="btnClearSecrets" class="btn btn-outline-secondary">Xóa token/mật khẩu</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">2. Dữ liệu test</div>
+                <div class="card-body row g-3">
+                    <div class="col-md-4"><label class="form-label">Phòng thực hiện ID</label><input id="roomId" type="number" class="form-control" value="252"></div>
+                    <div class="col-md-4"><label class="form-label">Dịch vụ ID</label><input id="serviceId" type="number" class="form-control" value="16652"></div>
+                    <div class="col-md-4"><label class="form-label">Bác sĩ chỉ định ID</label><input id="doctorId" type="number" class="form-control" value="14402"></div>
+                    <div class="col-md-4"><label class="form-label">Khoa cấu hình ID</label><input id="configuredDeptId" type="number" class="form-control" value="52"></div>
+                    <div class="col-md-4"><label class="form-label">Khoa không cấu hình ID</label><input id="otherDeptId" type="number" class="form-control" value="53"></div>
+                    <div class="col-md-4"><label class="form-label">Quầy tiếp đón ID</label><input id="receptionDeskId" type="number" class="form-control" value="3002"></div>
+                    <div class="col-md-4"><label class="form-label">Loại đối tượng ID</label><input id="patientTypeId" type="number" class="form-control" value="1052"></div>
+                    <div class="col-md-4"><label class="form-label">Trễ giữa các lượt (ms)</label><input id="delayMs" type="number" class="form-control" value="250" min="0"></div>
+                    <div class="col-md-4"><label class="form-label">Tiền tố tên NB</label><input id="patientPrefix" class="form-control" value="Test SAKURA-115216"></div>
+                    <div class="col-12 form-check ms-2">
+                        <input id="splitPriority" class="form-check-input" type="checkbox" checked>
+                        <label class="form-check-label" for="splitPriority">Thiết lập hệ thống hiện tại: Tách STT ưu tiên = true</label>
+                    </div>
+                    <div class="col-12"><button id="btnSaveSettings" class="btn btn-outline-primary">Lưu các ID trên máy</button></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">3. Cấu hình dải STT của phòng</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button id="btnLoadRoom" class="btn btn-sm btn-outline-primary">Tải từ phòng</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-room" data-preset="priority">Mẫu: ưu tiên 1–3</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-room" data-preset="both">Mẫu: thường & ưu tiên 1–3</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-room" data-preset="separate">Mẫu: thường 1–3, ưu tiên 11–13</button>
+                    </div>
+                    <textarea id="roomConfig" class="form-control code" rows="12">[]</textarea>
+                    <div id="roomValidation" class="small-muted mt-2"></div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button id="btnValidateRoom" class="btn btn-outline-secondary">Kiểm tra cấu hình</button>
+                        <button id="btnSaveRoom" class="btn btn-warning">PATCH cấu hình vào phòng</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">4. Kịch bản sinh STT</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <button class="btn btn-sm btn-outline-secondary preset-scenario" data-preset="prioritySplit">Tách: chỉ dải ưu tiên</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-scenario" data-preset="bothSplit">Tách: dải thường & ưu tiên</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-scenario" data-preset="separateSplit">Tách: hai dải riêng</button>
+                        <button class="btn btn-sm btn-outline-secondary preset-scenario" data-preset="shared">Không tách: dùng chung</button>
+                    </div>
+                    <textarea id="scenario" class="form-control code" rows="12">[]</textarea>
+                    <div class="form-text">Mỗi dòng gồm label, khoaChiDinhId, uuTien, expectedStt và count. Để expectedStt = null nếu chỉ muốn tạo dữ liệu.</div>
+                    <div class="d-flex gap-2 mt-2">
+                        <button id="btnPreview" class="btn btn-outline-secondary">Xem trước</button>
+                        <button id="btnRun" class="btn btn-success">Chạy tuần tự</button>
+                        <button id="btnStop" class="btn btn-outline-danger" disabled>Dừng</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-12">
+            <section class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>5. Kết quả kiểm thử</span>
+                    <span id="summary" class="small-muted">Chưa chạy</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-wrap">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead><tr><th>#</th><th>Kịch bản</th><th>Khoa</th><th>Loại</th><th>NB/HS</th><th>DV</th><th>STT</th><th>Kỳ vọng</th><th>Kết quả</th><th>Thời gian</th></tr></thead>
+                            <tbody id="resultBody"><tr><td colspan="10" class="text-center text-muted py-4">Chưa có dữ liệu</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="sticky-actions d-flex flex-wrap gap-2">
+                    <button id="btnExportJson" class="btn btn-sm btn-outline-primary">Tải JSON</button>
+                    <button id="btnExportCsv" class="btn btn-sm btn-outline-primary">Tải CSV</button>
+                    <button id="btnCopyReport" class="btn btn-sm btn-outline-secondary">Copy báo cáo</button>
+                    <button id="btnClearResults" class="btn btn-sm btn-outline-danger">Xóa kết quả</button>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">6. Kiểm tra Kiosk 2</div>
+                <div class="card-body row g-2">
+                    <div class="col-md-8"><label class="form-label">Mã hồ sơ</label><input id="kioskMaHoSo" class="form-control" placeholder="Để trống sẽ dùng hồ sơ vừa tạo gần nhất"></div>
+                    <div class="col-md-4 d-flex align-items-end"><button id="btnCheckKiosk" class="btn btn-primary w-100">GET /kiosk2/stt</button></div>
+                    <div class="col-12"><pre id="kioskOutput">Chưa kiểm tra</pre></div>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-xl-6">
+            <section class="card h-100">
+                <div class="card-header">7. API Console</div>
+                <div class="card-body row g-2">
+                    <div class="col-md-3"><label class="form-label">Method</label><select id="rawMethod" class="form-select"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></div>
+                    <div class="col-md-9"><label class="form-label">Path sau /api/his/v1</label><input id="rawPath" class="form-control" value="/dm-phong/252"></div>
+                    <div class="col-12"><label class="form-label">JSON body</label><textarea id="rawBody" class="form-control code" rows="4" placeholder="Để trống với GET"></textarea></div>
+                    <div class="col-12"><button id="btnRawRequest" class="btn btn-outline-primary">Gửi request</button></div>
+                    <div class="col-12"><pre id="rawOutput">Chưa gửi</pre></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<script src="./test.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tạo dữ liệu Khám</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        h3 {
+            color: #667eea;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .btn-back {
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .btn-back:hover {
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .card {
+            border-radius: 12px;
+            border: 1px solid #e0e6ed;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        textarea {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            background: #f9fafb;
+        }
+
+        .form-check {
+            padding-top: 6px;
+        }
+
+        .form-label {
+            font-weight: 700;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h3>👨‍⚕️ Tạo dữ liệu Khám</h3>
+            <a href="../../" class="btn-back">← Quay lại</a>
+        </div>
+
+        <!-- Card -->
+        <div class="card p-4">
+
+            <!-- Form -->
+            <div class="row g-3 align-items-end">
+
+                <!-- Loop -->
+                <div class="col-md-4">
+                    <label class="form-label">Số lần chạy</label>
+                    <input type="number" id="loopCount" class="form-control" min="1" placeholder="Nhập số lần">
+                </div>
+
+                <!-- Checkbox group -->
+                <div class="col-md-4">
+                    <label class="form-label d-block">Tùy chọn</label>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="keThuocCheckBox">
+                        <label class="form-check-label" for="keThuocCheckBox">
+                            Kê thuốc
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="baoHiemCheckBox">
+                        <label class="form-check-label" for="baoHiemCheckBox">
+                            Bảo hiểm
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="clsCheckBox">
+                        <label class="form-check-label" for="clsCheckBox">
+                            Kê CLS
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Dịch vụ khám -->
+                <div class="col-md-6 position-relative">
+                    <label class="form-label">Chọn dịch vụ khám</label>
+                    <input type="text" id="dichVuKhamSearch" class="form-control" placeholder="Nhập tên dịch vụ...">
+                    <ul id="dichVuKhamDropdown" class="list-group position-absolute w-100"
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></ul>
+                </div>
+
+                <!-- Phòng khám -->
+                <div class="col-md-6">
+                    <label class="form-label">Chọn phòng khám</label>
+                    <select id="phongKhamSelect" class="form-select">
+                        <option value="">-- Chọn phòng --</option>
+                        <option value="157">Phòng khám số 1</option>
+                        <option value="158">Phòng khám số 2</option>
+                        <option value="159">Phòng khám số 3</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 position-relative">
+                    <label class="form-label">Chọn kê CLS</label>
+                    <input type="text" id="dichvuCls" class="form-control" placeholder="Nhập tên dịch vụ...">
+                    <ul id="dichVuClsDropdown" class="list-group position-absolute w-100"
+                        style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none;"></ul>
+                </div>
+
+                <!-- Button -->
+                <div class="col-md-4 d-grid">
+                    <button class="btn btn-primary btn-lg" onclick="runLoop()">
+                        ▶ Bắt đầu chạy
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Output -->
+            <div class="mt-4">
+                <label class="form-label">Log hệ thống</label>
+                <textarea id="output" class="form-control" rows="12" readonly
+                    placeholder="Kết quả sẽ hiển thị ở đây..."></textarea>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="./batch-kham.js"></script>
+</body>
+
+</html>
