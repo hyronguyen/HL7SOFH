@@ -1,8 +1,9 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const key = 'isofh-warehouse-support-v1';
-const fields = ['warehouse','service','lot','quantity','issued','cutoff','department','source','server'];
+const fields = ['warehouse','service','lot','quantity','issued','cutoff','department','source'];
 let rows = [];
+let workbookSheets = [], lastWorkbook = null;
 function idValue(name, required = false) {
   const s = $(name).value.trim();
   if (!s && !required) return 'NULL';
@@ -52,8 +53,8 @@ function ledger(p, allLots = false) {
 function buildQuery(type, p) {
   if (type === 'schema') return `SELECT table_schema,table_name,column_name,data_type FROM information_schema.columns
 WHERE table_name IN ('kho_nhap_xuat_tong_hop','kho_lo_nhap','kho_ton_kho','nb_dv_kho','kho_phieu_nhap_xuat_chi_tiet')
-ORDER BY table_schema,table_name,ordinal_position;
-SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS arguments
+ORDER BY table_schema,table_name,ordinal_position;`;
+  if (type === 'functions') return `SELECT n.nspname,p.proname,pg_get_function_identity_arguments(p.oid) AS arguments
 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 WHERE p.proname LIKE 'kho_ton_kho_theo_thoi_gian%';`;
   if (type === 'ledger') return ledger(p) + `
@@ -181,11 +182,11 @@ function analyze(value) {
   table.append(head,body);$('table').replaceChildren(table);status('Đã phân tích dữ liệu.');
 }
 function apiPreview() {
-  const p=params();const base=$('server').value.trim().replace(/\/$/,'');
+  const p=params();const base=IsofhApp.session()?.base || '<base-url>/api/his/v1';
   const q=new URLSearchParams({khoId:p.kho,thoiGian:time('cutoff').replace(' ','T')+'+07:00',tachLo:'true'});
   if(p.dv!=='NULL')q.set('dichVuId',p.dv);if(p.lo!=='NULL')q.set('loNhapId',p.lo);
-  const url=`${base}/api/his/v1/${$('endpoint').value}/ton-kho-theo-thoi-gian?${q}`;
-  $('apiPreview').textContent=`GET ${url}\n\nMẫu cập nhật tồn (có thay đổi dữ liệu, chạy thủ công nếu được phép):\nPOST ${base}/api/his/v1/kho-ton-kho/cap-nhat-sl-ton\n${JSON.stringify({dsKhoId:[Number(p.kho)],...(p.dv==='NULL'?{}:{dichVuId:Number(p.dv)})},null,2)}`;return url;
+  const apiPath=`/${$('endpoint').value}/ton-kho-theo-thoi-gian?${q}`;
+  $('apiPreview').textContent=`GET ${base}${apiPath}\n\nMẫu cập nhật tồn (có thay đổi dữ liệu, chạy thủ công nếu được phép):\nPOST ${base}/kho-ton-kho/cap-nhat-sl-ton\n${JSON.stringify({dsKhoId:[Number(p.kho)],...(p.dv==='NULL'?{}:{dichVuId:Number(p.dv)})},null,2)}`;return apiPath;
 }
 $('generate').onclick=safe(()=>{$('sql').value=buildQuery($('queryType').value,params());status('Đã sinh SQL; chưa chạy DB.');});
 $('copySql').onclick=safe(async()=>{await navigator.clipboard.writeText($('sql').value);status('Đã copy SQL.');});
@@ -197,7 +198,35 @@ $('exportJson').onclick=()=>download('ket-qua-kho.json',JSON.stringify(rows,null
 $('exportCsv').onclick=()=>{const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];const cell=v=>{let s=v==null?'':typeof v==='object'?JSON.stringify(v):String(v);if(/^[=+@-]/.test(s)&&typeof v!=='number')s="'"+s;return '"'+s.replaceAll('"','""')+'"';};download('ket-qua-kho.csv','\uFEFF'+[cols.map(cell).join(','),...rows.map(r=>cols.map(k=>cell(r[k])).join(','))].join('\r\n'),'text/csv;charset=utf-8');};
 $('exportReport').onclick=()=>download('case-kho.txt',`Hỗ trợ Kho\n${new Date().toISOString()}\n${JSON.stringify(Object.fromEntries(fields.filter(k=>k!=='server').map(k=>[k,$(k).value])),null,2)}\n\n${$('findings').textContent}\n\n${$('sql').value}\n\n${JSON.stringify(rows,null,2)}`);
 $('previewApi').onclick=safe(apiPreview);
-$('fetchApi').onclick=safe(async()=>{const base=new URL($('server').value.trim());if(!['http:','https:'].includes(base.protocol)||base.username||base.password)throw Error('URL server không hợp lệ');if(base.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(base.hostname))throw Error('Dùng HTTPS để gửi token');const token=$('token').value.trim().replace(/^Bearer\s+/i,'');if(!token)throw Error('Nhập Bearer token');const url=apiPreview();const control=new AbortController();const timeout=setTimeout(()=>control.abort(),30000);$('fetchApi').disabled=true;status('Đang tra tồn bằng GET…');try{const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`,'Accept-Language':'vi'},signal:control.signal});const raw=await response.text();if(!response.ok)throw Error(`HTTP ${response.status}: ${raw.slice(0,500)}`);const payload=JSON.parse(raw);$('payload').value=JSON.stringify(payload,null,2);analyze(payload);}finally{clearTimeout(timeout);$('fetchApi').disabled=false;}});
-$('clearToken').onclick=()=>{$('token').value='';status('Đã xóa token khỏi ô nhập.');};
+$('fetchApi').onclick=safe(async()=>{const session=IsofhApp.requireSession();$('fetchApi').disabled=true;status('Đang tra tồn bằng GET trên '+session.base);try{const payload=await IsofhApp.json(apiPreview());$('payload').value=JSON.stringify(payload,null,2);analyze(payload);}finally{$('fetchApi').disabled=false;}});
+function generatedReadQuery() {
+  const expected=buildQuery($('queryType').value,params());
+  if($('sql').value!==expected)throw Error('Thông tin case hoặc loại query đã thay đổi. Sinh lại SQL trước khi chạy.');
+  // Chỉ chạy mẫu đọc đã sinh, không nhận SQL tùy ý hoặc nhiều statement.
+  const sql=expected.replace(/--[^\n]*/g,'').trim().replace(/;\s*$/,'');
+  if(sql.includes(';')||!/^\s*(SELECT|WITH)\b/i.test(sql))throw Error('Chỉ cho phép một query SELECT/WITH.');
+  return sql;
+}
+function showWorkbookSheet() {
+ const sheet=workbookSheets[Number($('sheetSelect').value)];if(!sheet)return;
+ $('payload').value=JSON.stringify(sheet.rows,null,2);analyze(sheet.rows);
+}
+$('runQuery').onclick=safe(async()=>{
+ const session=IsofhApp.requireSession();const sql=generatedReadQuery();$('runQuery').disabled=true;
+ status('Đang chạy query trên '+session.base+' · '+session.account+'…');
+ try {
+  const response=await IsofhApp.request('/dm-mau-du-lieu/db/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify([sql])});
+  if(!response.ok){const raw=await response.text();let message=raw;try{message=JSON.parse(raw).message||raw;}catch{}throw Error(`Query HTTP ${response.status}: ${message.slice(0,800)}`);}
+  const buffer=await response.arrayBuffer();const bytes=new Uint8Array(buffer);
+  if(bytes[0]!==0x50||bytes[1]!==0x4b){const text=new TextDecoder().decode(buffer);let payload;try{payload=JSON.parse(text);}catch{throw Error('API không trả XLSX hoặc JSON.');}analyze(payload);$('payload').value=JSON.stringify(payload,null,2);lastWorkbook=null;workbookSheets=[];$('workbookTools').hidden=true;return;}
+  lastWorkbook=buffer;$('workbookTools').hidden=false;$('sheetSelect').replaceChildren();
+  try{workbookSheets=await IsofhXlsx.readWorkbook(buffer);}catch(e){workbookSheets=[];throw Error('Đã nhận file Excel. Chọn Tải Excel để xem; chưa đọc được trên trình duyệt: '+e.message);}
+  workbookSheets.forEach((sheet,i)=>{const option=document.createElement('option');option.value=String(i);option.textContent=`${sheet.name} (${sheet.rows.length} dòng)`;$('sheetSelect').append(option);});
+  $('sheetSelect').value='0';showWorkbookSheet();status('Query xong trên '+session.base+' · '+workbookSheets.length+' sheet.');
+ }finally{$('runQuery').disabled=false;}
+});
+$('sheetSelect').onchange=safe(showWorkbookSheet);
+$('downloadWorkbook').onclick=()=>{if(lastWorkbook)download('Query-kho.xlsx',lastWorkbook,'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');};
+window.addEventListener('isofh-session-change',()=>{rows=[];workbookSheets=[];lastWorkbook=null;$('table').replaceChildren();$('payload').value='';$('findings').textContent='Phiên đã thay đổi; chạy lại query trên server mới.';$('workbookTools').hidden=true;apiPreview();});
 try{const saved=JSON.parse(localStorage.getItem(key)||'{}');fields.forEach(k=>{if(saved[k]!==undefined)$(k).value=saved[k];});}catch{/* Cấu hình hỏng không chặn module. */}
 $('generate').click();

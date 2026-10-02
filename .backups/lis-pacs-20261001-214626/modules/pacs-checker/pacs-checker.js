@@ -34,7 +34,6 @@ const DEFAULT_KNOWLEDGE = {
     }
   },
   statusMap: {
-    XO: {hisStatus:"HEN_THUC_HIEN",note:"TQ1-7: thời gian hẹn"},
     OR: { hisStatus: "DA_TIEP_NHAN/DA_LAY_MAU", note: "Da thuc hien hoac da lay mau." },
     SC: { hisStatus: "DA_TIEP_NHAN", note: "Da tiep nhan dich vu." },
     BX: { hisStatus: "DA_TIEP_NHAN", note: "Da tiep nhan dich vu." },
@@ -209,7 +208,7 @@ function checkMessage() {
 
 function buildCheckResult(parsed, mode) {
   const definition = hl7Knowledge.messageTypes[mode] || hl7Knowledge.messageTypes.order;
-  const issues = hl7CurrentIssues(parsed, mode, "pacs");
+  const issues = [];
 
   for (const segmentName of definition.requiredSegments || []) {
     if (!parsed.byName[segmentName] || parsed.byName[segmentName].length === 0) {
@@ -260,8 +259,8 @@ function buildCheckResult(parsed, mode) {
   }
 
   if (mode === "result") {
-    if (!getValue(first(parsed.byName.ORC), 2, 1)) {
-      issues.push({ level: "error", message: "Thieu ORC-2 soPhieu tren ban tin ket qua." });
+    if (!getValue(first(parsed.byName.ORC), 2, 1) && !getValue(parsed.msh, 10)) {
+      issues.push({ level: "error", message: "Thieu ORC-2/MSH-10 soPhieu tren ban tin ket qua." });
     }
     parsed.orders.forEach((group, index) => {
       if (!getValue(group.obr, 2, 1)) {
@@ -276,7 +275,7 @@ function buildCheckResult(parsed, mode) {
       group.obx.forEach((obx) => {
         const setId = getValue(obx, 1, 1);
         if (!getValue(obx, 5)) {
-          issues.push({ level: "warn", message: `Order ${index + 1}: OBX-${setId || "?"} thieu OBX-5 gia tri ket qua.` });
+          issues.push({ level: "error", message: `Order ${index + 1}: OBX-${setId || "?"} thieu OBX-5 gia tri ket qua.` });
         }
         if (setId && !hl7Knowledge.obxResultMap?.[setId]) {
           issues.push({ level: "warn", message: `Order ${index + 1}: OBX-1=${setId} chua nam trong map ket qua PACS.` });
@@ -297,10 +296,10 @@ function buildDtoPreview(parsed, mode) {
   const dto = {
     endpoint: hl7Knowledge.messageTypes[mode]?.endpoint,
     messageType: getValue(parsed.msh, 9),
-    maHoSo: getValue(parsed.pid, 3, 1),
+    maHoSo: getValue(parsed.pid, 3, 1) || getValue(parsed.pv1, 19, 1),
     maNb: getValue(parsed.pid, 3, 2),
     maNbNormalized: normalizeMaNb(getValue(parsed.pid, 3, 2)),
-    soPhieu: mode === "result" ? getValue(first(parsed.byName.ORC), 2, 1) : getValue(parsed.msh, 10),
+    soPhieu: getValue(first(parsed.byName.ORC), 2, 1) || getValue(parsed.msh, 10),
     dsDichVu: []
   };
 
@@ -312,7 +311,7 @@ function buildDtoPreview(parsed, mode) {
       maKetNoi: getValue(group.obr, 4, 1),
       tenDichVu: getValue(group.obr, 4, 2),
       modality: getValue(group.obr, 24, 1),
-      thoiGianThucHien: getValue(group.orc, 16, 1)
+      thoiGianThucHien: getValue(group.orc, 16, 1) || getValue(group.obr, 7, 1) || getValue(group.obr, 6, 1)
     };
 
     if (mode === "order") {
@@ -327,8 +326,6 @@ function buildDtoPreview(parsed, mode) {
       item.chanDoan = getValue(group.obr, 31, 1) || getValue(group.obr, 13, 1);
       item.ghiChu = getValue(group.obr, 39, 2);
       item.thanhToan = getValue(group.obr, 9, 1);
-      item.mayChiDinh = getValue(group.obr, 19, 1);
-      item.sttThucHien = getValue(group.obr, 46, 1);
     }
 
     if (mode === "status") {
@@ -339,9 +336,7 @@ function buildDtoPreview(parsed, mode) {
       item.maNguoiTiepNhan = getValue(group.orc, 10, 1);
       item.maNguoiThucHien = getValue(group.obr, 34, 1);
       item.maPhuThucHien1 = getValue(group.obr, 38, 1);
-      item.maPhongThucHien = getValue(group.orc, 3, 1);
-      item.thoiGianHen = statusCode === "XO" ? getValue(group.tq1, 7, 1) : "";
-      if (item.thoiGianThucHien > item.thoiGianTiepNhan) item.thoiGianThucHien = item.thoiGianTiepNhan;
+      item.maPhongThucHien = getValue(group.orc, 3, 1) || getValue(group.orc, 21, 1);
     }
 
     if (mode === "result") {
@@ -352,9 +347,7 @@ function buildDtoPreview(parsed, mode) {
       item.maDieuDuong = getValue(group.obr, 35, 1);
       item.maPhuThucHien1 = getValue(group.obr, 38, 1);
       item.ketQuaPacs = parsePacsObx(group.obx);
-      const tx = group.obx.filter(x => getValue(x, 2) === "TX");
-      item.maMay = getValue(tx.find(x => getValue(x, 1) === "2"), 18, 1) || getValue(tx.find(x => getValue(x, 1) === "1"), 18, 1);
-      item.thoiGianTiepNhan = document.getElementById("pacsReceiptObr7")?.checked ? getValue(group.obr, 7, 1) : getValue(group.orc, 15, 1);
+      item.maMay = firstNonEmpty(group.obx.map((obx) => getValue(obx, 18, 1)));
     }
 
     dto.dsDichVu.push(item);
@@ -365,7 +358,7 @@ function buildDtoPreview(parsed, mode) {
 
 function parsePacsObx(obxSegments) {
   const result = {};
-  obxSegments.filter(obx => getValue(obx, 2) === "TX").forEach((obx) => {
+  obxSegments.forEach((obx) => {
     const setId = getValue(obx, 1, 1);
     const target = hl7Knowledge.obxResultMap?.[setId]?.dto || `obx${setId || "Unknown"}`;
     result[target] = getValue(obx, 5);
@@ -549,8 +542,7 @@ function generateStatusUpdate() {
 
     const msh = parsed.msh ? [...parsed.msh.fields] : ["MSH", "^~\\&"];
     setValue(msh, "MSH", 7, timestamp);
-    setValue(msh, "MSH", 9, "OMI^O23^OMI_O23");
-    setValue(msh, "MSH", 12, "2.7");
+    if (!getValue({ name: "MSH", fields: msh }, 9)) setValue(msh, "MSH", 9, "OMI^O23^OMI_O23");
     output.push(msh.join("|"));
     if (parsed.pid) output.push(parsed.pid.raw);
     if (parsed.pv1) output.push(parsed.pv1.raw);
@@ -581,7 +573,9 @@ function generateStatusUpdate() {
 function writeOutput(hl7) {
   const id = getValue(parseHl7(hl7).msh, 10) || getValue(first(parseHl7(hl7).byName.ORC), 2, 1) || "";
   document.getElementById("outputData").value = JSON.stringify({
-    Hl7Data: hl7
+    ID: id,
+    Hl7Data: hl7,
+    Sign: 1234567
   }, null, 2);
 }
 
@@ -799,7 +793,7 @@ function renderError(message) {
 
 function normalizeMaNb(value) {
   const raw = String(value || "");
-  return document.getElementById("pacsMaNbPrefix")?.checked !== false ? raw.slice(2) : raw;
+  return raw.startsWith("99") ? raw.slice(2) : raw;
 }
 
 function firstNonEmpty(values) {

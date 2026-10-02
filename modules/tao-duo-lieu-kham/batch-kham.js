@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://api-sakura-test.isofh.vn/api/his/v1';
+
 const DEFAULTS = {
     coSoKcbId: 1,
     khoaId: 52,
@@ -13,10 +13,7 @@ const DEFAULTS = {
     thuocKhoId: 302
 };
 
-const AUTH_PAYLOAD = {
-    taiKhoan: 'huynhn',
-    matKhau: '4151ef7ec1ffad5415dd59b2b59d8e04'
-};
+
 
 const els = {
     searchInput: document.getElementById('dichVuKhamSearch'),
@@ -186,37 +183,7 @@ function hideDropdown() {
     els.dropdown.style.display = 'none';
 }
 
-async function getToken(forceRefresh = false) {
-    if (!forceRefresh && cachedToken) {
-        return cachedToken;
-    }
-
-    const tokenInStorage = localStorage.getItem('token');
-    if (!forceRefresh && tokenInStorage) {
-        cachedToken = tokenInStorage;
-        return cachedToken;
-    }
-
-    try {
-        const response = await axios.post(`${API_BASE_URL}/auth/login`, AUTH_PAYLOAD, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept-Language': 'vi'
-            }
-        });
-
-        cachedToken = response.data?.data?.access_token;
-        if (!cachedToken) {
-            throw new Error('Token khong ton tai');
-        }
-
-        localStorage.setItem('token', cachedToken);
-        return cachedToken;
-    } catch (error) {
-        logError('Loi lay token', error);
-        throw error;
-    }
-}
+async function getToken() {return IsofhApp.requireSession().token;}
 
 async function taoDotDieuTri(token, index) {
     try {
@@ -458,41 +425,17 @@ async function checkChiPhi(token, patientId) {
 }
 
 async function apiGet(path, params = {}, token = null) {
-    const authToken = token || await getToken();
-    try {
-        return await axios.get(`${API_BASE_URL}${path}`, {
-            params,
-            headers: buildHeaders(authToken)
-        });
-    } catch (error) {
-        if (error.response?.status !== 401) {
-            throw error;
-        }
-
-        const refreshedToken = await getToken(true);
-        return axios.get(`${API_BASE_URL}${path}`, {
-            params,
-            headers: buildHeaders(refreshedToken)
-        });
-    }
+    const current = IsofhApp.requireSession();
+    if (token && current.token !== token) throw new Error('Phiên đã thay đổi. Dừng lượt tạo dữ liệu.');
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([k,v]) => { if (v !== null && v !== undefined) query.set(k,String(v)); });
+    return {data:await IsofhApp.json(path + (query.size ? '?' + query : ''))};
 }
 
 async function apiPost(path, payload, token = null) {
-    const authToken = token || await getToken();
-    try {
-        return await axios.post(`${API_BASE_URL}${path}`, payload, {
-            headers: buildHeaders(authToken)
-        });
-    } catch (error) {
-        if (error.response?.status !== 401) {
-            throw error;
-        }
-
-        const refreshedToken = await getToken(true);
-        return axios.post(`${API_BASE_URL}${path}`, payload, {
-            headers: buildHeaders(refreshedToken)
-        });
-    }
+    const current = IsofhApp.requireSession();
+    if (token && current.token !== token) throw new Error('Phiên đã thay đổi. Dừng lượt tạo dữ liệu.');
+    return {data:await IsofhApp.json(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})};
 }
 
 function buildHeaders(token) {

@@ -3,19 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PACS HL7 Sakura Checker</title>
-  <link rel="stylesheet" href="./pacs-checker.css">
+  <title>HL7 LIS Sakura Checker</title>
+  <link rel="stylesheet" href="./oml-to-oru.css">
 <link rel="stylesheet" href="../../shared/app.css">
-  <link rel="stylesheet" href="../../shared/hl7-api.css">
 </head>
 <body>
 <script src="../../shared/app.js"></script>
-<div class="app-page-title"><h1>PACS HL7 Sakura Checker</h1></div>
+<div class="app-page-title"><h1>HL7 LIS Sakura Checker</h1></div>
   <header class="app-module-heading">
     <div class="brand">
       <img src="https://techport.vn/uploads/2024/5-8/2.png" alt="Logo">
       <div>
-        <h1>PACS HL7 Sakura Checker</h1>
+        <h1>HL7 LIS Sakura Checker</h1>
         <p>Check OMI/OML/ORU.</p>
       </div>
     </div>
@@ -27,10 +26,10 @@
       <div id="analysisPanel" class="analysis-panel">
         <section class="summary">
           <div>
-            <h2>Wiki field PACS</h2>
-            <p>Search field truc tiep hoac paste ban tin PACS de parse.</p>
+            <h2>Ready</h2>
+            <p>Paste JSON {"data":"..."} hoac raw HL7 de bat dau check.</p>
           </div>
-          <strong>HL7 v2.7</strong>
+          <strong>HL7</strong>
         </section>
       </div>
     </section>
@@ -44,26 +43,25 @@
             <option value="order">Gui chi dinh</option>
             <option value="status">Cap nhat trang thai</option>
             <option value="result">Tra ket qua</option>
-            <option value="patient">Cap nhat nguoi benh</option>
           </select>
         </label>
         <label>
           <span>Status demo</span>
           <select id="statusCode">
-            <option value="SC">SC - Da tiep nhan/thuc hien</option>
-            <option value="OR">OR - Da thuc hien/lay mau</option>
-            <option value="BX">BX - Da tiep nhan</option>
-            <option value="CA">CA - Huy/cho tiep nhan</option>
-            <option value="RC">RC - Huy/cho tiep nhan</option>
+            <option value="OE">OE - Da tiep nhan mau</option>
+            <option value="OR">OR - Da lay mau</option>
+            <option value="OK">OK - Chuan bi lay mau</option>
+            <option value="DC">DC - Huy mau</option>
+            <option value="NW">NW - Cho tiep nhan</option>
           </select>
         </label>
       </div>
 
-      <label for="searchInput">Search field / segment / wiki</label>
-      <input id="searchInput" type="search" placeholder="VD: OBR-4, soKetNoi, modality, ketLuan, OBX-4..." autocomplete="off">
+      <label for="searchInput">Search field / segment</label>
+      <input id="searchInput" class="search-input" type="search" placeholder="VD: OBR-4, maHoSo, ket qua, GLU, PID..." autocomplete="off">
 
-      <label for="inputData">Input PACS HL7</label>
-      <textarea id="inputData" spellcheck="false" placeholder='{"Hl7Data":"MSH|^~\\&|SAKURA|TTTM|PACS|TTTM|20260629090000||OMI^O23^OMI_O23|12345|P|2.7\rPID|1||HS001^99NB001||Nguyen Van A||19900101|M\rPV1|1|O|||||||||||||||||HS001\rORC|NW|12345||XRAY01^HIS|CM||||20260629090000|||BS01^Bac si A|||20260629090000|20260629090000\rTQ1|1||1|||||20260629090000||R\rOBR|1|90001|PK01^Phong chup|XR001^X-quang nguc^XR||||20260629090000||||Chan doan so bo|||||KCD-Khoa CD||||||DX|WALK"}'></textarea>
+      <label for="inputData">Input HL7</label>
+      <textarea id="inputData" spellcheck="false" placeholder='{"data":"MSH|^~\\&|HL7_HIS|HIS|INFINITY^2.2|Roche Diagnostics|20260629090000||OML^O21^OML_O21|12345|P|2.5\rPID|1||NB001||Nguyen Van A||19900101|M\rPV1|1|O|||||||||||||||||HS001\rORC|NW|12345||||||20260629090000|||BS01^Bac si A\rOBR|1|1001|12345|GLU^Glucose|||20260629090000\rSPM||||Mau^Mau mau\rTQ1|||1||||||R"}'></textarea>
 
       <div class="button-group">
         <button id="checkBtn" type="button">Kiem tra ban tin</button>
@@ -74,10 +72,10 @@
 
       <label for="outputData">Output JSON</label>
       <textarea id="outputData" spellcheck="false" readonly></textarea>
+
     </section>
   </main>
 
-  <script src="./pacs-checker.js"></script>
-  <script src="../../shared/hl7-api.js"></script>
+  <script src="./oml-to-oru.js"></script>
 </body>
 </html>

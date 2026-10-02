@@ -6,32 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /* ====================== AUTH ====================== */
-async function getToken() {
-    try {
-        const response = await axios.post(
-            'https://api-sakura-test.isofh.vn/api/his/v1/auth/login',
-            {
-                taiKhoan: 'huynhn',
-                matKhau: '4151ef7ec1ffad5415dd59b2b59d8e04'
-            },
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept-Language': 'vi'
-                }
-            }
-        );
-
-        const token = response.data?.data?.access_token;
-
-        if (!token) throw new Error("Token không tồn tại");
-        localStorage.setItem('token', token);
-        return token;
-    } catch (error) {
-        console.error('❌ Lỗi lấy token:', error.response?.data || error.message);
-        throw error;
-    }
-}
+async function getToken() {return IsofhApp.requireSession().token;}
 
 /* ====================== GENERATOR FUNCTIONS ====================== */
 
@@ -70,17 +45,11 @@ async function laySoTiepDon(token, index) {
             loaiGiayTo: 1
         };
 
-        const res = await axios.post(
-            'https://api-sakura-test.isofh.vn/api/his/v1/nb-lay-so-tiep-don',
-            payload,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-
-        const data = res.data.data;
+        if (token !== IsofhApp.requireSession().token) throw new Error('Phiên đã thay đổi. Dừng lượt lấy số.');
+        const result = await IsofhApp.json('/nb-lay-so-tiep-don', {
+            method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
+        });
+        const data = result.data;
         log(`✅ BN ${index} - Stt: ${data.stt} - Mã: ${data.maLaySo} - Ưu tiên: ${data.uuTien ? 'Có' : 'Không'}`);
         return data;
 

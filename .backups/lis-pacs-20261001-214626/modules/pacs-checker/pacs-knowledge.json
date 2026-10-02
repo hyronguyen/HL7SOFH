@@ -3,10 +3,9 @@
     "project": "Sakura PACS",
     "notes": [
       "Chi dinh PACS dung OMI_O23 de gui thong tin nguoi benh, ho so va dich vu CDHA/TDCN sang PACS.",
-      "Cap nhat trang thai dung OMI_O23 (HL7 2.7) de tra trang thai tiep nhan, thuc hien hoac huy ve HIS.",
+      "Cap nhat trang thai dung OMI_O23/OML_O21 de tra trang thai tiep nhan, thuc hien hoac huy ve HIS.",
       "Tra ket qua dung ORU_R01 de gui mo ta, ket luan, phieu ket qua, link anh va canh bao ve HIS.",
-      "Mot so truong phu thuoc thiet lap chung nhu tien to ma nguoi benh, gio sinh, so dien thoai, MSH-3/MSH-4.",
-      "Đối chiếu controller và service BE hiện tại; DTO preview phụ thuộc cấu hình server."
+      "Mot so truong phu thuoc thiet lap chung nhu tien to ma nguoi benh, gio sinh, so dien thoai, MSH-3/MSH-4."
     ]
   },
   "messageTypes": {
@@ -15,64 +14,32 @@
       "endpoint": "GET /pacs/chi-dinh",
       "hl7": "OMI^O23^OMI_O23",
       "direction": "HIS -> PACS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "PV1",
-        "ORC",
-        "OBR"
-      ],
-      "optionalSegments": [
-        "IN1",
-        "TQ1"
-      ]
+      "requiredSegments": ["MSH", "PID", "PV1", "ORC", "OBR"],
+      "optionalSegments": ["IN1", "TQ1"]
     },
     "status": {
       "label": "Ban tin cap nhat trang thai PACS",
       "endpoint": "POST /pacs/trang-thai",
-      "hl7": "OMI^O23^OMI_O23",
+      "hl7": "OMI^O23^OMI_O23 hoac OML^O21^OML_O21",
       "direction": "PACS -> HIS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "ORC",
-        "OBR"
-      ],
-      "optionalSegments": [
-        "PV1",
-        "TQ1"
-      ]
+      "requiredSegments": ["MSH", "PID", "ORC", "OBR"],
+      "optionalSegments": ["PV1", "TQ1"]
     },
     "result": {
       "label": "Ban tin tra ket qua PACS",
       "endpoint": "POST /pacs/ket-qua",
       "hl7": "ORU^R01^ORU_R01",
       "direction": "PACS -> HIS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "ORC",
-        "OBR",
-        "OBX"
-      ],
-      "optionalSegments": [
-        "PV1",
-        "NTE"
-      ]
+      "requiredSegments": ["MSH", "PID", "ORC", "OBR", "OBX"],
+      "optionalSegments": ["PV1", "NTE"]
     },
     "patient": {
       "label": "Ban tin cap nhat nguoi benh",
       "endpoint": "PACS update patient",
       "hl7": "ADT^A08^ADT_A01",
       "direction": "HIS -> PACS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "PV1"
-      ],
-      "optionalSegments": [
-        "IN1"
-      ]
+      "requiredSegments": ["MSH", "PID", "PV1"],
+      "optionalSegments": ["IN1"]
     }
   },
   "statusMap": {
@@ -81,12 +48,12 @@
       "note": "Da thuc hien hoac da lay mau voi dich vu xet nghiem kem theo."
     },
     "SC": {
-      "hisStatus": "CDHA: DA_TIEP_NHAN / XN: DA_TIEP_NHAN_MAU",
-      "note": "Phụ thuộc loại dịch vụ HIS"
+      "hisStatus": "DA_TIEP_NHAN",
+      "note": "Da tiep nhan dich vu."
     },
     "BX": {
-      "hisStatus": "CDHA: DA_TIEP_NHAN / XN: DA_TIEP_NHAN_MAU",
-      "note": "Phụ thuộc loại dịch vụ HIS"
+      "hisStatus": "DA_TIEP_NHAN",
+      "note": "Da tiep nhan dich vu."
     },
     "CA": {
       "hisStatus": "CHO_TIEP_NHAN",
@@ -95,10 +62,6 @@
     "RC": {
       "hisStatus": "CHO_TIEP_NHAN",
       "note": "Huy tiep nhan, quay ve cho tiep nhan."
-    },
-    "XO": {
-      "hisStatus": "HEN_THUC_HIEN",
-      "note": "TQ1-7: thời gian hẹn"
     }
   },
   "obxResultMap": {
@@ -331,7 +294,7 @@
       "segment": "ORC",
       "field": 16,
       "component": 1,
-      "path": "ORC-16.1",
+      "path": "ORC-16.1", 
       "dto": "maLoaiHinhThanhToan",
       "label": "Loai hinh thanh toan",
       "note": "Loai hinh thanh toan cho dich vu.",
@@ -348,7 +311,7 @@
       "note": "Phong/khu vuc thuc hien dich vu.",
       "required": false
     },
-    {
+     {
       "message": "common",
       "segment": "ORC",
       "field": 27,
@@ -676,26 +639,6 @@
       "dto": "maMay",
       "label": "Ma may",
       "note": "Ma may sinh ket qua neu PACS co gui.",
-      "required": false
-    },
-    {
-      "message": "order",
-      "segment": "OBR",
-      "field": 19,
-      "component": 1,
-      "path": "OBR-19.1",
-      "dto": "mayChiDinh",
-      "label": "Máy chỉ định (mã-tên)",
-      "required": false
-    },
-    {
-      "message": "order",
-      "segment": "OBR",
-      "field": 46,
-      "component": 1,
-      "path": "OBR-46.1",
-      "dto": "sttThucHien",
-      "label": "STT thực hiện (UT. nếu ưu tiên, phụ thuộc GUI_STT_THUC_HIEN_PACS_BAN_TIN)",
       "required": false
     }
   ]

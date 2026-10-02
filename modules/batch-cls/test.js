@@ -12,7 +12,7 @@ function numberValue(id) {
 
 function getSettings() {
     return {
-        apiBase: $('apiBase').value.trim().replace(/\/$/, ''),
+        apiBase: IsofhApp.session()?.base || '',
         roomId: numberValue('roomId'), serviceId: numberValue('serviceId'),
         doctorId: numberValue('doctorId'), configuredDeptId: numberValue('configuredDeptId'),
         otherDeptId: numberValue('otherDeptId'), receptionDeskId: numberValue('receptionDeskId'),
@@ -24,13 +24,13 @@ function getSettings() {
 
 function saveSettings() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(getSettings()));
-    notify('Đã lưu URL và các ID. Token/mật khẩu không được lưu.', 'success');
+    notify('Đã lưu các ID kiểm thử. Phiên dùng chung lấy từ header.', 'success');
 }
 
 function loadSettings() {
     try {
         const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-        const map = { apiBase:'apiBase', roomId:'roomId', serviceId:'serviceId', doctorId:'doctorId', configuredDeptId:'configuredDeptId', otherDeptId:'otherDeptId', receptionDeskId:'receptionDeskId', patientTypeId:'patientTypeId', delayMs:'delayMs', patientPrefix:'patientPrefix' };
+        const map = { roomId:'roomId', serviceId:'serviceId', doctorId:'doctorId', configuredDeptId:'configuredDeptId', otherDeptId:'otherDeptId', receptionDeskId:'receptionDeskId', patientTypeId:'patientTypeId', delayMs:'delayMs', patientPrefix:'patientPrefix' };
         Object.entries(map).forEach(([key,id]) => { if (saved[key] !== undefined) $(id).value = saved[key]; });
         if (saved.splitPriority !== undefined) $('splitPriority').checked = Boolean(saved.splitPriority);
     } catch (error) { console.warn('Không đọc được cấu hình cũ', error); }
@@ -49,29 +49,14 @@ function setConnection(ok, text) {
 }
 
 function assertTestEnvironment() {
-    if (!$('confirmTestEnv').checked) throw new Error('Bạn chưa xác nhận môi trường test/dev');
+    if (!$('confirmTestEnv').checked) throw new Error('Bạn chưa xác nhận tạo dữ liệu kiểm thử');
     const host = new URL(getSettings().apiBase).hostname.toLowerCase();
-    if (!/(test|dev|stg|stage|localhost|127\.0\.0\.1)/.test(host)) {
+    if (!IsofhApp.isSafeBase(getSettings().apiBase)) {
         throw new Error(`Từ chối tạo dữ liệu trên host không có dấu hiệu test/dev: ${host}`);
     }
 }
 
-async function login(force = false) {
-    const manual = $('manualToken').value.trim().replace(/^Bearer\s+/i, '');
-    if (manual) { state.token = manual; setConnection(true, 'Dùng token nhập tay'); return manual; }
-    if (state.token && !force) return state.token;
-    const taiKhoan = $('username').value.trim();
-    const matKhau = $('password').value;
-    if (!taiKhoan || !matKhau) throw new Error('Cần nhập tài khoản/mật khẩu hoặc Bearer token');
-    const response = await fetch(`${getSettings().apiBase}/auth/login`, {
-        method:'POST', headers:{'Content-Type':'application/json','Accept-Language':'vi'},
-        body:JSON.stringify({taiKhoan, matKhau})
-    });
-    const payload = await readResponse(response);
-    const token = payload?.data?.access_token;
-    if (!response.ok || !token) throw new Error(errorMessage(payload, response.status));
-    state.token = token; setConnection(true, `Đã đăng nhập: ${taiKhoan}`); return token;
-}
+async function login() { const session=IsofhApp.requireSession();setConnection(true,'Đã đăng nhập: '+session.account);return session.token; }
 
 async function readResponse(response) {
     const text = await response.text();
@@ -83,17 +68,9 @@ function errorMessage(payload, status) {
     return payload?.message || payload?.error || payload?.raw || `HTTP ${status}`;
 }
 
-async function api(method, path, body, options = {}) {
-    const token = await login();
-    const headers = {'Accept-Language':'vi', Authorization:`Bearer ${token}`};
-    if (body !== undefined && body !== null) headers['Content-Type'] = 'application/json';
-    const request = { method, headers, signal:options.signal };
-    if (body !== undefined && body !== null) request.body = JSON.stringify(body);
-    let response = await fetch(`${getSettings().apiBase}${path.startsWith('/') ? path : `/${path}`}`, request);
-    if (response.status === 401 && !$('manualToken').value.trim()) {
-        const refreshed = await login(true); request.headers.Authorization = `Bearer ${refreshed}`;
-        response = await fetch(`${getSettings().apiBase}${path.startsWith('/') ? path : `/${path}`}`, request);
-    }
+async function api(method,path,body,options={}) {
+ const headers={};if(body!==undefined&&body!==null)headers['Content-Type']='application/json';
+ const response=await IsofhApp.request(path.startsWith('/')?path:'/'+path,{method,headers,signal:options.signal,...(body!==undefined&&body!==null?{body:JSON.stringify(body)}:{})});
     const payload = await readResponse(response);
     if (!response.ok || (payload?.code !== undefined && payload.code !== 0)) {
         throw new Error(errorMessage(payload, response.status));
@@ -346,8 +323,6 @@ function reportText() {
 function bind(id,event,handler) { $(id).addEventListener(event, async (...args)=>{ try { await handler(...args); } catch(error) { setConnection(false,'Có lỗi'); notify(error.message,'danger'); console.error(error); } }); }
 
 loadSettings(); setRoomPreset('both'); setScenarioPreset('bothSplit'); renderResults();
-bind('btnLogin','click',async()=>{await login(true);notify('Xác thực thành công','success');});
-bind('btnClearSecrets','click',()=>{$('manualToken').value='';$('password').value='';state.token=null;setConnection(false,'Đã xóa thông tin xác thực');});
 bind('btnSaveSettings','click',saveSettings); bind('btnLoadRoom','click',loadRoom); bind('btnValidateRoom','click',showRoomValidation); bind('btnSaveRoom','click',saveRoom);
 document.querySelectorAll('.preset-room').forEach(button=>button.addEventListener('click',()=>setRoomPreset(button.dataset.preset)));
 document.querySelectorAll('.preset-scenario').forEach(button=>button.addEventListener('click',()=>setScenarioPreset(button.dataset.preset)));
@@ -356,3 +331,5 @@ bind('btnCheckKiosk','click',checkKiosk); bind('btnRawRequest','click',rawReques
 bind('btnExportJson','click',()=>download('SAKURA-115216-results.json',JSON.stringify({settings:{...getSettings(),apiBase:getSettings().apiBase},results:state.results},null,2),'application/json'));
 bind('btnExportCsv','click',exportCsv); bind('btnCopyReport','click',async()=>{await navigator.clipboard.writeText(reportText());notify('Đã copy báo cáo','success');});
 bind('btnClearResults','click',()=>{state.results=[];renderResults();});
+
+window.addEventListener('isofh-session-change',()=>{state.controller?.abort();setConnection(Boolean(IsofhApp.session()),IsofhApp.session()?'Phiên đã đổi: '+IsofhApp.session().account:'Chưa đăng nhập');});

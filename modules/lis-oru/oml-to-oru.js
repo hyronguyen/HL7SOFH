@@ -42,7 +42,7 @@ const DEFAULT_KNOWLEDGE = {
   fields: [
     { message: "common", segment: "MSH", field: 9, component: 0, path: "MSH-9", dto: "messageType", label: "Loai ban tin", required: true },
     { message: "common", segment: "MSH", field: 10, component: 0, path: "MSH-10", dto: "soPhieu", label: "So phieu", required: true },
-    { message: "common", segment: "PID", field: 3, component: 1, path: "PID-3.1", dto: "maNb", label: "Ma nguoi benh", required: true },
+    { message: "common", segment: "PID", field: 2, component: 1, path: "PID-2.1", dto: "maNb", label: "Ma nguoi benh", required: true },
     { message: "common", segment: "PV1", field: 19, component: 1, path: "PV1-19.1", dto: "maHoSo", label: "Ma ho so", required: true },
     { message: "common", segment: "OBR", field: 2, component: 1, path: "OBR-2.1", dto: "id/chiSoConId", label: "ID ket noi HIS", required: true },
     { message: "status", segment: "ORC", field: 1, component: 1, path: "ORC-1.1", dto: "trangThai", label: "Ma trang thai LIS", required: true },
@@ -58,7 +58,6 @@ let lastRenderState = null;
 document.addEventListener("DOMContentLoaded", async () => {
   await loadKnowledge();
   bindControls();
-  updateKnowledgeSummary();
   renderWikiOnly();
 });
 
@@ -214,7 +213,7 @@ function checkMessage() {
 
 function buildCheckResult(parsed, mode) {
   const definition = hl7Knowledge.messageTypes[mode] || hl7Knowledge.messageTypes.order;
-  const issues = [];
+  const issues = hl7CurrentIssues(parsed, mode, "lis");
 
   for (const segmentName of definition.requiredSegments || []) {
     if (!parsed.byName[segmentName] || parsed.byName[segmentName].length === 0) {
@@ -274,8 +273,8 @@ function buildCheckResult(parsed, mode) {
   if (!getValue(parsed.pv1, 19, 1)) {
     issues.push({ level: "error", message: "Thieu PV1-19.1 maHoSo. Sakura doi chieu voi soPhieu." });
   }
-  if (!getValue(parsed.pid, 3, 1)) {
-    issues.push({ level: "warn", message: "Thieu PID-3.1 maNb." });
+  if (!getValue(parsed.pid, 2, 1)) {
+    issues.push({ level: "warn", message: "Thieu PID-2.1 maNb." });
   }
 
   return {
@@ -290,7 +289,7 @@ function buildDtoPreview(parsed, mode) {
   const dto = {
     endpoint: hl7Knowledge.messageTypes[mode]?.endpoint,
     maHoSo: getValue(parsed.pv1, 19, 1),
-    maNb: getValue(parsed.pid, 3, 1),
+    maNb: getValue(parsed.pid, 2, 1),
     soPhieu: getValue(parsed.msh, 10),
     dsDichVu: []
   };
@@ -309,10 +308,10 @@ function buildDtoPreview(parsed, mode) {
       const statusCode = getValue(group.orc, 1, 1);
       item.trangThai2 = statusCode;
       item.trangThai = hl7Knowledge.statusMap[statusCode]?.hisStatus || null;
-      item.thoiGianLayMau = getValue(group.orc, 15, 1) || getValue(group.orc, 9, 1);
+      item.thoiGianLayMau = getValue(group.orc, 15, 1);
       item.maNguoiLayMau = getValue(group.orc, 19, 1);
-      item.thoiGianTiepNhanMau = getValue(group.orc, 15, 1);
-      item.maNguoiTiepNhan = getValue(group.orc, 22, 1);
+      item.thoiGianTiepNhanMau = getValue(group.orc, 16, 1);
+      item.maNguoiTiepNhan = getValue(group.orc, 10, 1);
     }
 
     if (mode === "result") {
@@ -322,18 +321,25 @@ function buildDtoPreview(parsed, mode) {
       item.maDvCha = getValue(group.obr, 4, 4);
       item.maMay = getValue(obx, 18, 1);
       item.maBacSi = getValue(obx, 16, 1);
-      item.ketQua = getValue(obx, 5, 1);
+      item.ketQua = getValue(obx, 5);
       item.ketQuaThamChieu = getValue(obx, 7, 1);
       item.trangThaiKq = hl7Knowledge.resultFlagMap[flag]?.hisValue || null;
-      item.donVi = getValue(obx, 6, 2) || getValue(obx, 6, 1);
+      item.donVi = getValue(obx, 6, 2);
       item.thoiGianCoKetQua = getValue(obx, 14, 1);
-      item.maNguoiThucHien = getValue(group.obr, 19, 1);
+      item.maNguoiThucHien = getValue(group.obr, 10, 1);
       item.ghiChu = getValue(first(group.nte), 3, 1);
-      item.maQuyTrinh = getValue(group.obr, 24, 1);
+      item.maQuyTrinh = getValue(group.obr, 44, 1);
       item.phuongPhap = getValue(obx, 17, 2);
-      item.canhBao = getValue(obx, 17, 4);
+      item.canhBao = getValue(obx, 17, 5);
       item.loaiBenhPham = getValue(group.spm, 4, 2);
-      item.soGpb = getValue(group.obr, 39, 1);
+      item.thoiGianLayMau = getValue(group.orc, 15, 1);
+      item.thoiGianTiepNhanMau = getValue(group.orc, 16, 1);
+      item.maNguoiTiepNhan = getValue(group.orc, 10, 1);
+      item.maNguoiLayMau = getValue(group.orc, 19, 1);
+      item.maPhongThucHien = getValue(group.orc, 13, 4);
+      item.maNguoiThucHienChinh2 = getValue(group.obr, 34, 1);
+      item.maNguoiThucHienPhu2 = getValue(group.obr, 35, 1);
+      item.soGpb = getValue(group.obr, 11, 1);
     }
 
     dto.dsDichVu.push(item);
@@ -554,7 +560,7 @@ function generateStatusUpdate() {
     const timestamp = hl7Now();
     const output = [];
 
-    if (parsed.msh) output.push(parsed.msh.raw);
+    if (parsed.msh) { const msh=[...parsed.msh.fields]; setValue(msh,"MSH",9,"OML^O21^OML_O21"); setValue(msh,"MSH",12,"2.5"); output.push(msh.join("|")); }
     if (parsed.pid) output.push(parsed.pid.raw);
     if (parsed.pv1) output.push(parsed.pv1.raw);
 
@@ -564,7 +570,8 @@ function generateStatusUpdate() {
       setValue(orc, "ORC", 1, statusCode);
       setValue(orc, "ORC", 15, timestamp);
       setValue(orc, "ORC", 19, getValue(orcSegment(group), 19) || "tester");
-      setValue(orc, "ORC", 22, getValue(orcSegment(group), 22) || "tester");
+      setValue(orc, "ORC", 16, timestamp);
+      setValue(orc, "ORC", 10, getValue(orcSegment(group), 10) || "tester");
       if (!getValue({ name: "OBR", fields: obr }, 18)) {
         setValue(obr, "OBR", 18, `SID${String(index + 1).padStart(4, "0")}`);
       }
@@ -616,7 +623,7 @@ function renderCheckResult(parsed, mode, check) {
     <section class="quick-grid">
       ${summaryItem("Loai HL7", getValue(parsed.msh, 9))}
       ${summaryItem("So phieu", getValue(parsed.msh, 10))}
-      ${summaryItem("Ma NB", getValue(parsed.pid, 3, 1))}
+      ${summaryItem("Ma NB", getValue(parsed.pid, 2, 1))}
       ${summaryItem("Ma ho so", getValue(parsed.pv1, 19, 1))}
       ${summaryItem("So order", String(parsed.orders.length))}
       ${summaryItem("Segments", String(parsed.segments.length))}

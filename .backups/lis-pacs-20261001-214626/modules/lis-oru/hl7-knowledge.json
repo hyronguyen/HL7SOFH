@@ -6,8 +6,7 @@
       "Chi dinh dung OML_O21 de gui thong tin nguoi benh, ho so va dich vu xet nghiem sang LIS.",
       "Cap nhat trang thai dung OML_O21 de tra trang thai lay mau, tiep nhan mau hoac huy mau ve HIS.",
       "Tra ket qua dung ORU_R01 de gui ket qua, don vi, khoang tham chieu va canh bao ve HIS.",
-      "Mot so truong co the phu thuoc thiet lap chung nhu gui so dien thoai, ma benh an hoac thoi gian lay mau.",
-      "Đối chiếu controller và service BE hiện tại; DTO preview phụ thuộc cấu hình server."
+      "Mot so truong co the phu thuoc thiet lap chung nhu gui so dien thoai, ma benh an hoac thoi gian lay mau."
     ]
   },
   "messageTypes": {
@@ -16,57 +15,24 @@
       "endpoint": "GET /lis/chi-dinh",
       "hl7": "OML^O21^OML_O21",
       "direction": "HIS -> LIS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "PV1",
-        "ORC",
-        "OBR"
-      ],
-      "optionalSegments": [
-        "GT1",
-        "IN1",
-        "DG1",
-        "SPM",
-        "TQ1",
-        "NTE"
-      ]
+      "requiredSegments": ["MSH", "PID", "PV1", "ORC", "OBR"],
+      "optionalSegments": ["GT1", "IN1", "DG1", "SPM", "TQ1", "NTE"]
     },
     "status": {
       "label": "Ban tin cap nhat trang thai",
       "endpoint": "POST /lis/trang-thai",
       "hl7": "OML^O21^OML_O21",
       "direction": "LIS -> HIS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "PV1",
-        "ORC",
-        "OBR"
-      ],
-      "optionalSegments": [
-        "SPM",
-        "TQ1",
-        "NTE"
-      ]
+      "requiredSegments": ["MSH", "PID", "PV1", "ORC", "OBR"],
+      "optionalSegments": ["SPM", "TQ1", "NTE"]
     },
     "result": {
       "label": "Ban tin tra ket qua",
       "endpoint": "POST /lis/ket-qua",
       "hl7": "ORU^R01^ORU_R01",
       "direction": "LIS -> HIS",
-      "requiredSegments": [
-        "MSH",
-        "PID",
-        "PV1",
-        "ORC",
-        "OBR",
-        "OBX"
-      ],
-      "optionalSegments": [
-        "SPM",
-        "NTE"
-      ]
+      "requiredSegments": ["MSH", "PID", "PV1", "ORC", "OBR", "OBX"],
+      "optionalSegments": ["SPM", "NTE"]
     }
   },
   "statusMap": {
@@ -135,9 +101,9 @@
     {
       "message": "common",
       "segment": "PID",
-      "field": 2,
+      "field": 3,
       "component": 1,
-      "path": "PID-2.1",
+      "path": "PID-3.1",
       "dto": "maNb",
       "label": "Ma nguoi benh",
       "note": "Ma nguoi benh dung de doi chieu thong tin hanh chinh.",
@@ -319,12 +285,12 @@
       "note": "Thoi gian mau duoc lay tai phong lay mau.",
       "required": false
     },
-    {
+      {
       "message": "status",
       "segment": "ORC",
-      "field": 16,
+      "field": 36,
       "component": 1,
-      "path": "ORC-16.1",
+      "path": "ORC-36.1",
       "dto": "thoiGianTiepNhanMau",
       "label": "Thoi gian tiep nhan mau",
       "note": "Thoi gian mau duoc tiep nhan tai phong tiep nhan mau.",
@@ -333,9 +299,9 @@
     {
       "message": "result",
       "segment": "ORC",
-      "field": 16,
+      "field": 15,
       "component": 1,
-      "path": "ORC-16.1",
+      "path": "ORC-15.1",
       "dto": "thoiGianTiepNhanMau",
       "label": "Thoi gian tiep nhan mau",
       "note": "Thoi gian tiep nhan mau kem theo ban tin ket qua.",
@@ -366,9 +332,9 @@
     {
       "message": "status",
       "segment": "ORC",
-      "field": 10,
+      "field": 22,
       "component": 1,
-      "path": "ORC-10.1",
+      "path": "ORC-22.1",
       "dto": "maNguoiTiepNhan",
       "label": "Ma nguoi tiep nhan",
       "note": "Nguoi tiep nhan mau tai khu vuc xet nghiem.",
@@ -520,9 +486,9 @@
     {
       "message": "result",
       "segment": "OBR",
-      "field": 10,
+      "field": 19,
       "component": 1,
-      "path": "OBR-10.1",
+      "path": "OBR-19.1",
       "dto": "maNguoiThucHien",
       "label": "Ma nguoi thuc hien",
       "note": "Nguoi thuc hien ket qua xet nghiem.",
@@ -542,9 +508,9 @@
     {
       "message": "result",
       "segment": "OBR",
-      "field": 44,
+      "field": 24,
       "component": 1,
-      "path": "OBR-44.1",
+      "path": "OBR-24.1",
       "dto": "maQuyTrinh",
       "label": "Ma quy trinh",
       "note": "Ma quy trinh xet nghiem neu LIS co gui.",
@@ -575,9 +541,9 @@
     {
       "message": "result",
       "segment": "OBR",
-      "field": 11,
+      "field": 39,
       "component": 1,
-      "path": "OBR-11.1",
+      "path": "OBR-39.1",
       "dto": "soGpb",
       "label": "So GPB",
       "note": "So giai phau benh hoac so tham chieu mau dac thu.",
@@ -642,8 +608,8 @@
       "message": "result",
       "segment": "OBX",
       "field": 5,
-      "component": 0,
-      "path": "OBX-5",
+      "component": 1,
+      "path": "OBX-5.1",
       "dto": "ketQua",
       "label": "Ket qua",
       "note": "Gia tri ket qua xet nghiem.",
@@ -719,8 +685,8 @@
       "message": "result",
       "segment": "OBX",
       "field": 17,
-      "component": 5,
-      "path": "OBX-17.5",
+      "component": 4,
+      "path": "OBX-17.4",
       "dto": "canhBao",
       "label": "Canh bao",
       "note": "Canh bao ket qua neu co.",

@@ -1,55 +1,55 @@
 const DEFAULT_KNOWLEDGE = {
   source: {
-    project: "Sakura PACS",
-    notes: ["Fallback knowledge. Mo qua local server de load day du file pacs-knowledge.json."]
+    project: "Sakura LIS",
+    notes: ["Fallback knowledge. Mo qua local server de load day du file hl7-knowledge.json."]
   },
   messageTypes: {
     order: {
-      label: "Ban tin gui chi dinh PACS",
-      endpoint: "GET /pacs/chi-dinh",
-      hl7: "OMI^O23^OMI_O23",
-      direction: "HIS -> PACS",
+      label: "Ban tin gui chi dinh",
+      endpoint: "GET /lis/chi-dinh",
+      hl7: "OML^O21^OML_O21",
+      direction: "HIS -> LIS",
       requiredSegments: ["MSH", "PID", "PV1", "ORC", "OBR"]
     },
     status: {
-      label: "Ban tin cap nhat trang thai PACS",
-      endpoint: "POST /pacs/trang-thai",
-      hl7: "OMI^O23^OMI_O23",
-      direction: "PACS -> HIS",
-      requiredSegments: ["MSH", "PID", "ORC", "OBR"]
+      label: "Ban tin cap nhat trang thai",
+      endpoint: "POST /lis/trang-thai",
+      hl7: "OML^O21^OML_O21",
+      direction: "LIS -> HIS",
+      requiredSegments: ["MSH", "PID", "PV1", "ORC", "OBR"]
     },
     result: {
-      label: "Ban tin tra ket qua PACS",
-      endpoint: "POST /pacs/ket-qua",
+      label: "Ban tin tra ket qua",
+      endpoint: "POST /lis/ket-qua",
       hl7: "ORU^R01^ORU_R01",
-      direction: "PACS -> HIS",
-      requiredSegments: ["MSH", "PID", "ORC", "OBR", "OBX"]
-    },
-    patient: {
-      label: "Ban tin cap nhat nguoi benh",
-      endpoint: "PACS update patient",
-      hl7: "ADT^A08^ADT_A01",
-      direction: "HIS -> PACS",
-      requiredSegments: ["MSH", "PID", "PV1"]
+      direction: "LIS -> HIS",
+      requiredSegments: ["MSH", "PID", "PV1", "ORC", "OBR", "OBX"]
     }
   },
   statusMap: {
-    XO: {hisStatus:"HEN_THUC_HIEN",note:"TQ1-7: thời gian hẹn"},
-    OR: { hisStatus: "DA_TIEP_NHAN/DA_LAY_MAU", note: "Da thuc hien hoac da lay mau." },
-    SC: { hisStatus: "DA_TIEP_NHAN", note: "Da tiep nhan dich vu." },
-    BX: { hisStatus: "DA_TIEP_NHAN", note: "Da tiep nhan dich vu." },
-    CA: { hisStatus: "CHO_TIEP_NHAN", note: "Huy tiep nhan." },
-    RC: { hisStatus: "CHO_TIEP_NHAN", note: "Huy tiep nhan." }
+    NW: { hisStatus: "CHO_TIEP_NHAN", note: "Cho tiep nhan" },
+    OK: { hisStatus: "CHUAN_BI_LAY_MAU", note: "Chuan bi lay mau" },
+    OE: { hisStatus: "DA_TIEP_NHAN_MAU", note: "Da tiep nhan mau" },
+    OR: { hisStatus: "DA_LAY_MAU", note: "Da lay mau" },
+    DC: { hisStatus: "HUY_MAU", note: "Huy mau" }
   },
-  obxResultMap: {
-    1: { dto: "ketQua", note: "Mo ta/ket qua chinh." },
-    2: { dto: "ketLuan", note: "Ket luan." },
-    3: { dto: "phieuKetQua", note: "Noi dung phieu." },
-    4: { dto: "anhKetQua", note: "Link anh chinh." },
-    5: { dto: "canhBao", note: "Canh bao." },
-    6: { dto: "anhKetQua2", note: "Link anh bo sung." }
+  resultFlagMap: {
+    N: { hisValue: "BINH_THUONG", note: "Binh thuong" },
+    L: { hisValue: "THAP", note: "Thap" },
+    H: { hisValue: "CAO", note: "Cao" },
+    C: { hisValue: "BAT_THUONG", note: "Bat thuong" }
   },
-  fields: []
+  fields: [
+    { message: "common", segment: "MSH", field: 9, component: 0, path: "MSH-9", dto: "messageType", label: "Loai ban tin", required: true },
+    { message: "common", segment: "MSH", field: 10, component: 0, path: "MSH-10", dto: "soPhieu", label: "So phieu", required: true },
+    { message: "common", segment: "PID", field: 3, component: 1, path: "PID-3.1", dto: "maNb", label: "Ma nguoi benh", required: true },
+    { message: "common", segment: "PV1", field: 19, component: 1, path: "PV1-19.1", dto: "maHoSo", label: "Ma ho so", required: true },
+    { message: "common", segment: "OBR", field: 2, component: 1, path: "OBR-2.1", dto: "id/chiSoConId", label: "ID ket noi HIS", required: true },
+    { message: "status", segment: "ORC", field: 1, component: 1, path: "ORC-1.1", dto: "trangThai", label: "Ma trang thai LIS", required: true },
+    { message: "status", segment: "OBR", field: 4, component: 1, path: "OBR-4.1", dto: "maKetNoi", label: "Ma ket noi dich vu", required: true },
+    { message: "result", segment: "OBX", field: 5, component: 1, path: "OBX-5.1", dto: "ketQua", label: "Ket qua", required: true },
+    { message: "result", segment: "OBX", field: 14, component: 1, path: "OBX-14.1", dto: "thoiGianCoKetQua", label: "Thoi gian co ket qua", required: true }
+  ]
 };
 
 let hl7Knowledge = DEFAULT_KNOWLEDGE;
@@ -63,24 +63,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function loadKnowledge() {
   try {
-    const response = await fetch("./pacs-knowledge.json", { cache: "no-store" });
+    const response = await fetch("./hl7-knowledge.json", { cache: "no-store" });
     if (response.ok) {
       hl7Knowledge = await response.json();
     }
   } catch (error) {
-    console.warn("Cannot load pacs-knowledge.json, using fallback knowledge.", error);
+    console.warn("Cannot load hl7-knowledge.json, using fallback knowledge.", error);
   }
 }
 
 function bindControls() {
   document.getElementById("checkBtn").addEventListener("click", checkMessage);
-  document.getElementById("demoResultBtn").addEventListener("click", convertToORU);
+  document.getElementById("demoResultBtn").addEventListener("click", convertOMLtoORU);
   document.getElementById("demoStatusBtn").addEventListener("click", generateStatusUpdate);
   document.getElementById("copyBtn").addEventListener("click", copyOutput);
-  document.getElementById("messageMode").addEventListener("change", () => {
-    if (document.getElementById("inputData").value.trim()) checkMessage();
-    else renderWikiOnly();
-  });
+  document.getElementById("messageMode").addEventListener("change", checkMessage);
   document.getElementById("searchInput").addEventListener("input", () => {
     if (lastRenderState) {
       renderCheckResult(lastRenderState.parsed, lastRenderState.mode, lastRenderState.check);
@@ -90,22 +87,21 @@ function bindControls() {
   });
 }
 
-
 function readInputData() {
   const rawValue = document.getElementById("inputData").value.trim();
-  if (!rawValue) throw new Error("Chua co du lieu dau vao.");
+  if (!rawValue) {
+    throw new Error("Chua co du lieu dau vao.");
+  }
 
   try {
     const parsed = JSON.parse(rawValue);
     if (typeof parsed === "string") return parsed;
-    if (parsed && typeof parsed.Hl7Data === "string") return parsed.Hl7Data;
     if (parsed && typeof parsed.data === "string") return parsed.data;
-    if (parsed && typeof parsed.hl7Data === "string") return parsed.hl7Data;
   } catch (ignore) {
     return rawValue;
   }
 
-  throw new Error('Dau vao JSON can co field "Hl7Data" hoac "data" dang chuoi HL7.');
+  throw new Error('Dau vao JSON can co field "data" dang chuoi HL7.');
 }
 
 function normalizeHl7(raw) {
@@ -124,7 +120,12 @@ function parseHl7(raw) {
   const data = normalizeHl7(raw);
   const segments = data.split("\r").map((line, index) => {
     const fields = line.split("|");
-    return { index, raw: line, name: fields[0], fields };
+    return {
+      index,
+      raw: line,
+      name: fields[0],
+      fields
+    };
   });
 
   const byName = segments.reduce((map, segment) => {
@@ -152,14 +153,14 @@ function buildOrderGroups(segments) {
   for (const segment of segments) {
     if (segment.name === "ORC") {
       looseOrc = segment;
-      current = { orc: segment, obr: null, obx: [], nte: [], tq1: null };
+      current = { orc: segment, obr: null, obx: [], nte: [], spm: null, tq1: null };
       groups.push(current);
       continue;
     }
 
     if (segment.name === "OBR") {
       if (!current || current.obr) {
-        current = { orc: looseOrc, obr: null, obx: [], nte: [], tq1: null };
+        current = { orc: looseOrc, obr: null, obx: [], nte: [], spm: null, tq1: null };
         groups.push(current);
       }
       current.obr = segment;
@@ -167,8 +168,10 @@ function buildOrderGroups(segments) {
     }
 
     if (!current) continue;
+
     if (segment.name === "OBX") current.obx.push(segment);
     if (segment.name === "NTE") current.nte.push(segment);
+    if (segment.name === "SPM") current.spm = segment;
     if (segment.name === "TQ1") current.tq1 = segment;
   }
 
@@ -182,13 +185,14 @@ function first(values) {
 function detectMessageType(parsed) {
   const msh9 = getValue(parsed.msh, 9);
   if (msh9.includes("ORU^R01")) return "result";
-  if (msh9.includes("ADT^A08")) return "patient";
-  if (msh9.includes("OMI^O23") || msh9.includes("OML^O21")) {
-    const orderControl = getValue(first(parsed.byName.ORC), 1, 1);
-    if (hl7Knowledge.statusMap?.[orderControl] && orderControl !== "NW") return "status";
+  if (msh9.includes("OML^O21")) {
+    const hasResultData = parsed.byName.OBX && parsed.byName.OBX.length > 0;
+    if (hasResultData) return "result";
+    const orderControl = getValue(first(parsed.byName.ORC), 1);
+    if (["OE", "OR", "OK", "DC"].includes(orderControl)) return "status";
     return "order";
   }
-  return parsed.byName.OBX?.length ? "result" : "order";
+  return "order";
 }
 
 function selectedMode(parsed) {
@@ -209,80 +213,68 @@ function checkMessage() {
 
 function buildCheckResult(parsed, mode) {
   const definition = hl7Knowledge.messageTypes[mode] || hl7Knowledge.messageTypes.order;
-  const issues = hl7CurrentIssues(parsed, mode, "pacs");
+  const issues = [];
 
   for (const segmentName of definition.requiredSegments || []) {
     if (!parsed.byName[segmentName] || parsed.byName[segmentName].length === 0) {
-      issues.push({ level: "error", message: `Thieu segment bat buoc ${segmentName}.` });
+      issues.push({
+        level: "error",
+        message: `Thieu segment bat buoc ${segmentName}.`
+      });
     }
-  }
-
-  if (!getValue(parsed.pid, 3, 1)) {
-    issues.push({ level: "warn", message: "Thieu PID-3.1 maHoSo de doi chieu nguoi benh." });
-  }
-  if (!getValue(parsed.pid, 3, 2)) {
-    issues.push({ level: "warn", message: "Thieu PID-3.2 maNb." });
-  }
-
-  if (mode === "order" && !getValue(parsed.msh, 10)) {
-    issues.push({ level: "error", message: "Thieu MSH-10 soPhieu tren ban tin chi dinh." });
-  }
-
-  if (mode === "order") {
-    parsed.orders.forEach((group, index) => {
-      if (!getValue(group.orc, 1, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu ORC-1 ma lenh chi dinh.` });
-      }
-      if (!getValue(group.obr, 2, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-2 soKetNoi.` });
-      }
-      if (!getValue(group.obr, 4, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-4.1 maKetNoi dich vu.` });
-      }
-    });
   }
 
   if (mode === "status") {
     parsed.orders.forEach((group, index) => {
-      const orderControl = getValue(group.orc, 1, 1);
+      const orderControl = getValue(group.orc, 1);
       if (!orderControl) {
         issues.push({ level: "error", message: `Order ${index + 1}: thieu ORC-1 de map trang thai.` });
-      } else if (!hl7Knowledge.statusMap?.[orderControl]) {
-        issues.push({ level: "error", message: `Order ${index + 1}: ORC-1=${orderControl} chua co trong map trang thai PACS.` });
+      } else if (!hl7Knowledge.statusMap[orderControl]) {
+        issues.push({ level: "error", message: `Order ${index + 1}: ORC-1=${orderControl} chua duoc Sakura map.` });
       }
-      if (!getValue(group.obr, 2, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-2 soKetNoi.` });
+      if (!getValue(group.obr, 2)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-2 id ket noi HIS.` });
       }
-      if (!getValue(group.obr, 4, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-4.1 maKetNoi dich vu.` });
+      if (!getValue(group.obr, 4)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-4 ma ket noi dich vu.` });
       }
     });
   }
 
   if (mode === "result") {
-    if (!getValue(first(parsed.byName.ORC), 2, 1)) {
-      issues.push({ level: "error", message: "Thieu ORC-2 soPhieu tren ban tin ket qua." });
-    }
     parsed.orders.forEach((group, index) => {
-      if (!getValue(group.obr, 2, 1)) {
-        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-2 soKetNoi.` });
-      }
-      if (!getValue(group.obr, 22, 1)) {
-        issues.push({ level: "warn", message: `Order ${index + 1}: chua co OBR-22 thoiGianCoKetQua.` });
-      }
-      if (!group.obx.length) {
+      const obx = first(group.obx);
+      if (!obx) {
         issues.push({ level: "error", message: `Order ${index + 1}: thieu OBX ket qua.` });
+        return;
       }
-      group.obx.forEach((obx) => {
-        const setId = getValue(obx, 1, 1);
-        if (!getValue(obx, 5)) {
-          issues.push({ level: "warn", message: `Order ${index + 1}: OBX-${setId || "?"} thieu OBX-5 gia tri ket qua.` });
-        }
-        if (setId && !hl7Knowledge.obxResultMap?.[setId]) {
-          issues.push({ level: "warn", message: `Order ${index + 1}: OBX-1=${setId} chua nam trong map ket qua PACS.` });
-        }
-      });
+      if (!getValue(group.obr, 2)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-2 id ket noi HIS.` });
+      }
+      if (!getValue(group.obr, 4, 1)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBR-4.1 ma chi so/ma ket noi.` });
+      }
+      if (!getValue(obx, 5)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBX-5 ket qua.` });
+      }
+      if (!getValue(obx, 14)) {
+        issues.push({ level: "error", message: `Order ${index + 1}: thieu OBX-14 thoi gian co ket qua, ban tin ket qua co the bi tu choi.` });
+      }
+      const flag = getValue(obx, 8);
+      if (flag && !hl7Knowledge.resultFlagMap[flag]) {
+        issues.push({ level: "warn", message: `Order ${index + 1}: OBX-8=${flag} khong nam trong map N/L/H/C.` });
+      }
     });
+  }
+
+  if (!getValue(parsed.msh, 10)) {
+    issues.push({ level: "error", message: "Thieu MSH-10 soPhieu, khong du thong tin de tim phieu xet nghiem." });
+  }
+  if (!getValue(parsed.pv1, 19, 1)) {
+    issues.push({ level: "error", message: "Thieu PV1-19.1 maHoSo. Sakura doi chieu voi soPhieu." });
+  }
+  if (!getValue(parsed.pid, 3, 1)) {
+    issues.push({ level: "warn", message: "Thieu PID-3.1 maNb." });
   }
 
   return {
@@ -296,65 +288,51 @@ function buildCheckResult(parsed, mode) {
 function buildDtoPreview(parsed, mode) {
   const dto = {
     endpoint: hl7Knowledge.messageTypes[mode]?.endpoint,
-    messageType: getValue(parsed.msh, 9),
-    maHoSo: getValue(parsed.pid, 3, 1),
-    maNb: getValue(parsed.pid, 3, 2),
-    maNbNormalized: normalizeMaNb(getValue(parsed.pid, 3, 2)),
-    soPhieu: mode === "result" ? getValue(first(parsed.byName.ORC), 2, 1) : getValue(parsed.msh, 10),
+    maHoSo: getValue(parsed.pv1, 19, 1),
+    maNb: getValue(parsed.pid, 3, 1),
+    soPhieu: getValue(parsed.msh, 10),
     dsDichVu: []
   };
 
-  parsed.orders.forEach((group, index) => {
-    const statusCode = getValue(group.orc, 1, 1);
+  parsed.orders.forEach((group) => {
+    const identifier = splitIdentifier(getValue(group.obr, 2, 1));
+    const obx = first(group.obx);
     const item = {
-      stt: index + 1,
-      soKetNoi: getValue(group.obr, 2, 1),
+      id: identifier.id,
+      chiSoConId: identifier.chiSoConId,
       maKetNoi: getValue(group.obr, 4, 1),
-      tenDichVu: getValue(group.obr, 4, 2),
-      modality: getValue(group.obr, 24, 1),
-      thoiGianThucHien: getValue(group.orc, 16, 1)
+      sid: getValue(group.obr, 18, 1)
     };
 
-    if (mode === "order") {
-      item.orderControl = statusCode;
-      item.soPhieu = getValue(group.orc, 2, 1) || getValue(parsed.msh, 10);
-      item.maPhongThucHien = getValue(group.orc, 3, 1) || getValue(group.orc, 21, 1) || getValue(group.obr, 3, 1);
-      item.thoiGianChiDinh = getValue(group.tq1, 7, 1) || getValue(group.orc, 9, 1);
-      item.thoiGianTiepNhan = getValue(group.obr, 7, 1);
-      item.khoaChiDinh = getValue(group.obr, 18, 1);
-      item.khoaThucHien = getValue(group.obr, 20, 1);
-      item.hinhThucDiChuyen = getValue(group.obr, 30, 1);
-      item.chanDoan = getValue(group.obr, 31, 1) || getValue(group.obr, 13, 1);
-      item.ghiChu = getValue(group.obr, 39, 2);
-      item.thanhToan = getValue(group.obr, 9, 1);
-      item.mayChiDinh = getValue(group.obr, 19, 1);
-      item.sttThucHien = getValue(group.obr, 46, 1);
-    }
-
     if (mode === "status") {
+      const statusCode = getValue(group.orc, 1, 1);
       item.trangThai2 = statusCode;
-      item.trangThai = hl7Knowledge.statusMap?.[statusCode]?.hisStatus || null;
-      item.thoiGianTiepNhan = getValue(group.orc, 15, 1);
+      item.trangThai = hl7Knowledge.statusMap[statusCode]?.hisStatus || null;
+      item.thoiGianLayMau = getValue(group.orc, 15, 1) || getValue(group.orc, 9, 1);
+      item.maNguoiLayMau = getValue(group.orc, 19, 1);
       item.thoiGianTiepNhanMau = getValue(group.orc, 15, 1);
-      item.maNguoiTiepNhan = getValue(group.orc, 10, 1);
-      item.maNguoiThucHien = getValue(group.obr, 34, 1);
-      item.maPhuThucHien1 = getValue(group.obr, 38, 1);
-      item.maPhongThucHien = getValue(group.orc, 3, 1);
-      item.thoiGianHen = statusCode === "XO" ? getValue(group.tq1, 7, 1) : "";
-      if (item.thoiGianThucHien > item.thoiGianTiepNhan) item.thoiGianThucHien = item.thoiGianTiepNhan;
+      item.maNguoiTiepNhan = getValue(group.orc, 22, 1);
     }
 
     if (mode === "result") {
-      item.thoiGianTiepNhanMau = getValue(group.orc, 15, 1);
-      item.thoiGianCoKetQua = getValue(group.obr, 22, 1);
-      item.maNguoiDocKetQua = getValue(group.obr, 32, 1);
-      item.maNguoiThucHien = getValue(group.obr, 34, 1);
-      item.maDieuDuong = getValue(group.obr, 35, 1);
-      item.maPhuThucHien1 = getValue(group.obr, 38, 1);
-      item.ketQuaPacs = parsePacsObx(group.obx);
-      const tx = group.obx.filter(x => getValue(x, 2) === "TX");
-      item.maMay = getValue(tx.find(x => getValue(x, 1) === "2"), 18, 1) || getValue(tx.find(x => getValue(x, 1) === "1"), 18, 1);
-      item.thoiGianTiepNhan = document.getElementById("pacsReceiptObr7")?.checked ? getValue(group.obr, 7, 1) : getValue(group.orc, 15, 1);
+      const flag = getValue(obx, 8, 1);
+      item.maChiSoCon = getValue(group.obr, 4, 1);
+      item.tenChiSoCon = getValue(group.obr, 4, 2);
+      item.maDvCha = getValue(group.obr, 4, 4);
+      item.maMay = getValue(obx, 18, 1);
+      item.maBacSi = getValue(obx, 16, 1);
+      item.ketQua = getValue(obx, 5, 1);
+      item.ketQuaThamChieu = getValue(obx, 7, 1);
+      item.trangThaiKq = hl7Knowledge.resultFlagMap[flag]?.hisValue || null;
+      item.donVi = getValue(obx, 6, 2) || getValue(obx, 6, 1);
+      item.thoiGianCoKetQua = getValue(obx, 14, 1);
+      item.maNguoiThucHien = getValue(group.obr, 19, 1);
+      item.ghiChu = getValue(first(group.nte), 3, 1);
+      item.maQuyTrinh = getValue(group.obr, 24, 1);
+      item.phuongPhap = getValue(obx, 17, 2);
+      item.canhBao = getValue(obx, 17, 4);
+      item.loaiBenhPham = getValue(group.spm, 4, 2);
+      item.soGpb = getValue(group.obr, 39, 1);
     }
 
     dto.dsDichVu.push(item);
@@ -363,22 +341,17 @@ function buildDtoPreview(parsed, mode) {
   return dto;
 }
 
-function parsePacsObx(obxSegments) {
-  const result = {};
-  obxSegments.filter(obx => getValue(obx, 2) === "TX").forEach((obx) => {
-    const setId = getValue(obx, 1, 1);
-    const target = hl7Knowledge.obxResultMap?.[setId]?.dto || `obx${setId || "Unknown"}`;
-    result[target] = getValue(obx, 5);
-  });
-  return result;
-}
-
 function collectFields(parsed, mode) {
   return wikiFieldsForMode(mode).flatMap((field) => {
     const segments = segmentsForField(parsed, field.segment);
 
     if (!segments.length) {
-      return [{ ...field, displayPath: field.path, occurrence: "", value: "" }];
+      return [{
+        ...field,
+        displayPath: field.path,
+        occurrence: "",
+        value: ""
+      }];
     }
 
     return segments.map((segment, index) => ({
@@ -391,16 +364,29 @@ function collectFields(parsed, mode) {
 }
 
 function wikiFieldsForMode(mode) {
-  if (mode === "all") return hl7Knowledge.fields || [];
-  return (hl7Knowledge.fields || []).filter((field) => field.message === "common" || field.message === mode);
+  if (mode === "all") {
+    return hl7Knowledge.fields || [];
+  }
+
+  return (hl7Knowledge.fields || [])
+    .filter((field) => field.message === "common" || field.message === mode);
 }
 
 function segmentsForField(parsed, segmentName) {
-  if (segmentName === "OBX") return parsed.orders.flatMap((group) => group.obx);
-  if (["ORC", "OBR", "TQ1"].includes(segmentName)) {
-    return parsed.orders.map((group) => group[segmentName.toLowerCase()]).filter(Boolean);
+  if (segmentName === "OBX") {
+    return parsed.orders.flatMap((group) => group.obx);
   }
-  if (segmentName === "NTE") return parsed.orders.flatMap((group) => group.nte);
+
+  if (["ORC", "OBR", "SPM", "TQ1"].includes(segmentName)) {
+    return parsed.orders
+      .map((group) => group[segmentName.toLowerCase()])
+      .filter(Boolean);
+  }
+
+  if (segmentName === "NTE") {
+    return parsed.orders.flatMap((group) => group.nte);
+  }
+
   return parsed.byName[segmentName] || [];
 }
 
@@ -418,7 +404,9 @@ function collectRawFields(parsed) {
     const occurrence = occurrenceBySegment[segment.name];
     const start = segment.name === "MSH" ? 2 : 1;
 
-    if (segment.name === "MSH") rows.push(rawFieldRow(segment, occurrence, 1, 0, "|"));
+    if (segment.name === "MSH") {
+      rows.push(rawFieldRow(segment, occurrence, 1, 0, "|"));
+    }
 
     for (let fieldNumber = start; fieldNumber < segment.fields.length; fieldNumber++) {
       const value = getValue(segment, fieldNumber);
@@ -445,8 +433,6 @@ function rawFieldRow(segment, occurrence, fieldNumber, componentNumber, value) {
     component: componentNumber,
     path: `${segment.name}-${fieldNumber}${componentSuffix}`,
     displayPath: `${segment.name}[${occurrence}]-${fieldNumber}${componentSuffix}`,
-    occurrence: `${segment.name}[${occurrence}]`,
-    segmentIndex: segment.index,
     dto: "",
     label: rawFieldLabel(segment.name, fieldNumber, componentNumber),
     note: rawFieldNote(segment.name, fieldNumber),
@@ -476,6 +462,7 @@ function getValue(segment, fieldNumber, componentNumber = 0) {
   } else {
     raw = segment.fields[fieldNumber] || "";
   }
+
   if (!componentNumber) return raw || "";
   return (raw || "").split("^")[componentNumber - 1] || "";
 }
@@ -486,14 +473,30 @@ function setValue(fields, segmentName, fieldNumber, value) {
   fields[index] = value == null ? "" : String(value);
 }
 
-function convertToORU() {
+function setComponent(fields, segmentName, fieldNumber, componentNumber, value) {
+  const index = segmentName === "MSH" ? fieldNumber - 1 : fieldNumber;
+  while (fields.length <= index) fields.push("");
+  const components = String(fields[index] || "").split("^");
+  while (components.length < componentNumber) components.push("");
+  components[componentNumber - 1] = value == null ? "" : String(value);
+  fields[index] = components.join("^");
+}
+
+function splitIdentifier(value) {
+  const [id, chiSoConId] = String(value || "").split("-");
+  return {
+    id: id || null,
+    chiSoConId: chiSoConId || null
+  };
+}
+
+function convertOMLtoORU() {
   try {
     const parsed = parseHl7(readInputData());
-    const timestamp = hl7Now();
+    const timestamp = getValue(parsed.msh, 7) || hl7Now();
     const output = [];
 
-    const msh = parsed.msh ? [...parsed.msh.fields] : ["MSH", "^~\\&"];
-    setValue(msh, "MSH", 7, timestamp);
+    const msh = [...parsed.msh.fields];
     setValue(msh, "MSH", 9, "ORU^R01^ORU_R01");
     output.push(msh.join("|"));
     if (parsed.pid) output.push(parsed.pid.raw);
@@ -502,41 +505,44 @@ function convertToORU() {
     parsed.orders.forEach((group, index) => {
       const orc = group.orc ? [...group.orc.fields] : ["ORC"];
       const obr = group.obr ? [...group.obr.fields] : ["OBR"];
-      const serviceCode = getValue(group.obr, 4, 1) || `PACS${index + 1}`;
-      const serviceName = getValue(group.obr, 4, 2) || "Dich vu PACS";
+      const serviceCode = getValue(group.obr, 4, 1) || `XN${index + 1}`;
+      const serviceName = getValue(group.obr, 4, 2) || "Xet nghiem";
+      const value = serviceCode.toUpperCase().includes("PCR") ? "Am tinh" : (4 + index * 1.3).toFixed(1);
+      const isNumber = !Number.isNaN(Number(value));
+      const unit = isNumber ? "^mmol/L" : "";
 
       setValue(orc, "ORC", 1, "SC");
       setValue(orc, "ORC", 15, timestamp);
-      setValue(obr, "OBR", 22, timestamp);
-      if (!getValue({ name: "OBR", fields: obr }, 2, 1)) setValue(obr, "OBR", 2, String(index + 1));
-      if (!getValue({ name: "OBR", fields: obr }, 4, 1)) setValue(obr, "OBR", 4, `${serviceCode}^${serviceName}`);
+      setValue(obr, "OBR", 4, `${serviceCode}^${serviceName}^^${getValue(group.obr, 4, 1)}`);
 
       output.push(orc.join("|"));
       output.push(obr.join("|"));
-      output.push(buildPacsObx(1, "REPORT", `Mo ta demo cho ${serviceName}`, timestamp, "PACS-DEMO"));
-      output.push(buildPacsObx(2, "CONCLUSION", "Ket luan demo trong gioi han binh thuong", timestamp, "PACS-DEMO"));
-      output.push(buildPacsObx(4, "IMAGE", `https://pacs.example.local/images/${serviceCode}`, timestamp, "PACS-DEMO"));
-      output.push(buildPacsObx(5, "WARNING", "", timestamp, "PACS-DEMO"));
+      if (group.spm) output.push(group.spm.raw);
+      output.push(buildObx(index + 1, isNumber ? "NM" : "ST", serviceCode, serviceName, value, unit, isNumber ? "2.5-7.5" : "", "N", timestamp));
+      output.push(`NTE|${index + 1}||Demo ket qua tu tool LIS ORU`);
     });
 
-    const hl7 = output.join("\r");
-    writeOutput(hl7);
-    const resultParsed = parseHl7(hl7);
-    renderCheckResult(resultParsed, "result", buildCheckResult(resultParsed, "result"));
+    writeOutput(output.join("\r"));
+    renderCheckResult(parseHl7(output.join("\r")), "result", buildCheckResult(parseHl7(output.join("\r")), "result"));
   } catch (error) {
     renderError(error.message);
   }
 }
 
-function buildPacsObx(setId, code, value, timestamp, machine) {
+function buildObx(setId, valueType, code, name, value, unit, refRange, flag, timestamp) {
   const fields = ["OBX"];
   setValue(fields, "OBX", 1, setId);
-  setValue(fields, "OBX", 2, "TX");
-  setValue(fields, "OBX", 3, `${code}^PACS ${code}`);
+  setValue(fields, "OBX", 2, valueType);
+  setValue(fields, "OBX", 3, `${code}^${name}`);
   setValue(fields, "OBX", 5, value);
+  setValue(fields, "OBX", 6, unit);
+  setValue(fields, "OBX", 7, refRange);
+  setValue(fields, "OBX", 8, flag);
   setValue(fields, "OBX", 11, "F");
   setValue(fields, "OBX", 14, timestamp);
-  setValue(fields, "OBX", 18, machine);
+  setValue(fields, "OBX", 16, "SYSTEM^LIS Demo");
+  setValue(fields, "OBX", 17, "^Demo method^^");
+  setValue(fields, "OBX", 18, "LIS-DEMO");
   return fields.join("|");
 }
 
@@ -547,11 +553,7 @@ function generateStatusUpdate() {
     const timestamp = hl7Now();
     const output = [];
 
-    const msh = parsed.msh ? [...parsed.msh.fields] : ["MSH", "^~\\&"];
-    setValue(msh, "MSH", 7, timestamp);
-    setValue(msh, "MSH", 9, "OMI^O23^OMI_O23");
-    setValue(msh, "MSH", 12, "2.7");
-    output.push(msh.join("|"));
+    if (parsed.msh) output.push(parsed.msh.raw);
     if (parsed.pid) output.push(parsed.pid.raw);
     if (parsed.pv1) output.push(parsed.pv1.raw);
 
@@ -559,30 +561,31 @@ function generateStatusUpdate() {
       const orc = group.orc ? [...group.orc.fields] : ["ORC"];
       const obr = group.obr ? [...group.obr.fields] : ["OBR"];
       setValue(orc, "ORC", 1, statusCode);
-      setValue(orc, "ORC", 10, getValue(group.orc, 10, 1) || "PACS-USER");
       setValue(orc, "ORC", 15, timestamp);
-      setValue(orc, "ORC", 16, timestamp);
-      if (!getValue({ name: "OBR", fields: obr }, 2, 1)) setValue(obr, "OBR", 2, String(index + 1));
-      if (!getValue({ name: "OBR", fields: obr }, 4, 1)) setValue(obr, "OBR", 4, `PACS${index + 1}^Dich vu PACS`);
+      setValue(orc, "ORC", 19, getValue(orcSegment(group), 19) || "tester");
+      setValue(orc, "ORC", 22, getValue(orcSegment(group), 22) || "tester");
+      if (!getValue({ name: "OBR", fields: obr }, 18)) {
+        setValue(obr, "OBR", 18, `SID${String(index + 1).padStart(4, "0")}`);
+      }
       output.push(orc.join("|"));
-      if (group.tq1) output.push(group.tq1.raw);
       output.push(obr.join("|"));
+      if (group.spm) output.push(group.spm.raw);
+      if (group.tq1) output.push(group.tq1.raw);
     });
 
-    const hl7 = output.join("\r");
-    writeOutput(hl7);
-    const resultParsed = parseHl7(hl7);
-    renderCheckResult(resultParsed, "status", buildCheckResult(resultParsed, "status"));
+    writeOutput(output.join("\r"));
+    renderCheckResult(parseHl7(output.join("\r")), "status", buildCheckResult(parseHl7(output.join("\r")), "status"));
   } catch (error) {
     renderError(error.message);
   }
 }
 
+function orcSegment(group) {
+  return group.orc || { name: "ORC", fields: ["ORC"] };
+}
+
 function writeOutput(hl7) {
-  const id = getValue(parseHl7(hl7).msh, 10) || getValue(first(parseHl7(hl7).byName.ORC), 2, 1) || "";
-  document.getElementById("outputData").value = JSON.stringify({
-    Hl7Data: hl7
-  }, null, 2);
+  document.getElementById("outputData").value = JSON.stringify({ data: hl7 }, null, 2);
 }
 
 function copyOutput() {
@@ -611,9 +614,9 @@ function renderCheckResult(parsed, mode, check) {
     </section>
     <section class="quick-grid">
       ${summaryItem("Loai HL7", getValue(parsed.msh, 9))}
-      ${summaryItem("So phieu", getValue(first(parsed.byName.ORC), 2, 1) || getValue(parsed.msh, 10))}
-      ${summaryItem("Ma NB", getValue(parsed.pid, 3, 2))}
-      ${summaryItem("Ma ho so", getValue(parsed.pid, 3, 1) || getValue(parsed.pv1, 19, 1))}
+      ${summaryItem("So phieu", getValue(parsed.msh, 10))}
+      ${summaryItem("Ma NB", getValue(parsed.pid, 3, 1))}
+      ${summaryItem("Ma ho so", getValue(parsed.pv1, 19, 1))}
       ${summaryItem("So order", String(parsed.orders.length))}
       ${summaryItem("Segments", String(parsed.segments.length))}
     </section>
@@ -647,7 +650,7 @@ function renderWikiOnly() {
   document.getElementById("analysisPanel").innerHTML = `
     <section class="summary">
       <div>
-        <h2>Wiki field HL7 PACS</h2>
+        <h2>Wiki field HL7 LIS</h2>
         <p>Search truc tiep theo segment, field, ten nghiep vu hoac DTO ma khong can parse ban tin.</p>
       </div>
       <strong>${escapeHtml(hl7Knowledge.messageTypes[wikiMode]?.label || "Tat ca luong")}</strong>
@@ -658,6 +661,7 @@ function renderWikiOnly() {
     </section>
   `;
 }
+
 
 function renderIssues(issues) {
   if (!issues.length) {
@@ -675,11 +679,7 @@ function renderIssues(issues) {
 
 function renderMessageSearch(parsed, searchTerm) {
   if (!searchTerm) return "";
-  const rawHits = collectRawFields(parsed).filter((field) => fieldMatches(field, searchTerm));
-  const rawHitIndexes = new Set(rawHits.map((field) => field.segmentIndex));
-  const matchedSegments = parsed.segments.filter((segment) =>
-    includesText(segment.raw, searchTerm) || rawHitIndexes.has(segment.index)
-  );
+  const matchedSegments = parsed.segments.filter((segment) => includesText(segment.raw, searchTerm));
   return `
     <section>
       <h3>Tim trong ban tin</h3>
@@ -735,7 +735,7 @@ function renderFieldTable(fields, searchTerm = "", options = {}) {
         <tbody>
           ${filteredFields.map((field) => `
             <tr class="${field.required && !field.value ? "missing" : ""}">
-              <td><code>${highlightText(field.displayPath || field.path, searchTerm)}</code><span>${highlightText(field.path && field.displayPath !== field.path ? `${field.path} - ` : "", searchTerm)}${highlightText(field.label || "", searchTerm)}</span></td>
+              <td><code>${highlightText(field.displayPath || field.path, searchTerm)}</code><span>${highlightText(field.path && field.displayPath !== field.path ? field.path + " - " : "", searchTerm)}${highlightText(field.label || "", searchTerm)}</span></td>
               ${showDto ? `<td>${highlightText(field.dto || "", searchTerm)}</td>` : ""}
               ${showValue ? `<td>${highlightText(field.value || "", searchTerm)}</td>` : ""}
               <td>${highlightText(field.note || "", searchTerm)}</td>
@@ -751,7 +751,6 @@ function fieldMatches(field, searchTerm) {
   return [
     field.path,
     field.displayPath,
-    field.occurrence,
     field.segment,
     field.dto,
     field.label,
@@ -795,15 +794,6 @@ function renderError(message) {
       <strong>Loi</strong>
     </section>
   `;
-}
-
-function normalizeMaNb(value) {
-  const raw = String(value || "");
-  return document.getElementById("pacsMaNbPrefix")?.checked !== false ? raw.slice(2) : raw;
-}
-
-function firstNonEmpty(values) {
-  return values.find((value) => value) || "";
 }
 
 function hl7Now() {
