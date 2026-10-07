@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>KSK · Tạo XML và đẩy cổng BYT</title><link rel="stylesheet" href="../../shared/app.css"><link rel="stylesheet" href="tool.css"></head>
+<body><script src="../../shared/app.js"></script><div class="app-page-title"><h1>Phiếu KSK → Cổng Bộ Y tế</h1><p>Đọc phiếu, đối chiếu CLS, chỉnh XML nháp và gửi bản tin trực tiếp.</p></div>
+<main>
+ <section class="app-panel"><h2>1. Lấy dữ liệu phiếu</h2><div class="row">
+ <label>ID phiếu KSK<input id="recordId" inputmode="numeric" placeholder="Ví dụ: 1826775"></label>
+ <label>Nguồn CLS<select id="clsSource"><option value="saved">Theo HIS: ưu tiên CLS đã lưu trên phiếu</option><option value="live">Lấy lại CLS từ query hiện tại</option></select></label>
+ <button id="load">Query &amp; tạo XML nháp</button></div>
+ <p class="app-help">Dùng phiên HIS trên header. Sinh XML cho mẫu đủ 18 tuổi (EMR_BA970). Query và xem phiếu không gọi API đẩy của HIS.</p>
+ <div id="status" class="app-feedback" role="status" aria-live="polite"></div><div id="summary" class="summary"></div>
+ <details><summary>Dữ liệu &amp; SQL đối chiếu</summary><div class="actions"><button id="downloadSource">Tải nguồn JSON</button><label class="file-btn">Mở nguồn JSON<input id="sourceFile" type="file" accept=".json,application/json"></label></div><pre id="sql"></pre><div class="table-scroll"><table><thead><tr><th>Dịch vụ</th><th>Mã chỉ số</th><th>Tên chỉ số</th><th>Giá trị</th><th>Đơn vị</th></tr></thead><tbody id="clsTable"></tbody></table></div><pre id="sourceData"></pre></details>
+ </section>
+ <section class="app-panel"><h2>2. Xem &amp; sửa XML</h2><div class="actions"><button id="validate">Kiểm tra XML</button><button id="copyXml">Copy XML</button><button id="downloadXml">Tải XML</button><label class="file-btn">Mở XML<input id="xmlFile" type="file" accept=".xml,text/xml,application/xml"></label><button id="unsigned">Tạo bản nháp bỏ chữ ký</button></div>
+ <p class="app-help">Bản nháp chưa ký tài liệu. Nếu mở XML đã ký và sửa nội dung, cần ký lại trước khi gửi. Tool ký lớp bản tin gửi cổng; chữ ký tài liệu có thể nhập từ XML đã ký bên ngoài.</p>
+ <textarea id="xml" spellcheck="false" aria-label="XML gửi cổng" placeholder="XML nháp xuất hiện tại đây"></textarea><div id="validation" class="app-feedback" role="status"></div>
+ </section>
+ <section class="app-panel"><h2>3. Kết nối &amp; gửi cổng</h2><div class="gateway-grid">
+ <label>Base URL cổng<input id="gatewayUrl" type="url" value="https://api-sandbox.emrhub.vn"></label>
+ <label>Cách kết nối<select id="transport"><option value="direct">Trực tiếp từ trình duyệt</option><option value="local">Qua helper localhost (tránh CORS)</option></select></label>
+ <label>Tài khoản cổng<input id="gatewayUser" autocomplete="username"></label><label>Mật khẩu cổng<input id="gatewayPassword" type="password" autocomplete="current-password"></label>
+ <label>Mã GLN người gửi<input id="sender" placeholder="Lấy từ phiếu / bệnh viện"></label><label>Mã người nhận<input id="receiver" value="TDLBYT"></label>
+ <label>Version bản tin<input id="version" value="1.0.6"></label><label>Token có sẵn (tùy chọn)<input id="gatewayToken" type="password" autocomplete="off" placeholder="Bearer token"></label>
+ </div><label>Private key RSA ký bản tin (PEM)<textarea id="privateKey" spellcheck="false" autocomplete="off" placeholder="-----BEGIN PRIVATE KEY-----"></textarea></label><label class="file-btn">Chọn file private key<input id="keyFile" type="file" accept=".pem,.key,.txt"></label>
+ <p class="app-help">Tài khoản cổng và key phải thuộc cùng đơn vị gửi. Mật khẩu/key không lưu vào trình duyệt và không đưa vào file tải xuống. Với helper, chạy <code>node modules/ksk-gateway/server.cjs</code>, mở <code>http://127.0.0.1:8766</code> và chọn “Qua helper localhost”.</p>
+ <div class="actions"><button id="prepare">Tạo bản tin để xem</button><button id="push" class="primary" disabled>Đẩy bản tin này lên cổng</button><button id="clearSecrets">Xóa thông tin bí mật</button></div>
+ <div id="target" class="summary"></div><div id="gatewayStatus" class="app-feedback" role="status" aria-live="polite"></div><details><summary>Bản tin JSON sẽ gửi</summary><pre id="payload"></pre></details><h3>Phản hồi cổng</h3><pre id="response">Chưa gửi.</pre>
+ <p class="app-help">Gửi trực tiếp không cập nhật trạng thái hoặc lịch sử đẩy trong HIS. Có thể gửi lại cùng hồ sơ; kiểm tra phản hồi cổng trước khi thao tác tiếp.</p>
+ </section>
+</main><script src="../../shared/xlsx-reader.js"></script><script type="module" src="tool.js"></script></body></html>
