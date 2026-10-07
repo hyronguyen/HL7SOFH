@@ -16,5 +16,5 @@
 <label>Mật khẩu / mã băm đăng nhập HIS<input id="loginPassword" type="password" autocomplete="current-password"></label>
 <details><summary class="app-help">Dùng Bearer token có sẵn</summary><label>Token<input id="loginToken" type="password" autocomplete="off"></label><p class="app-help">Nhập tên tài khoản tương ứng để hiển thị trên header.</p></details>
 <button id="loginSubmit" type="submit">Đăng nhập / kết nối</button><div id="loginFeedback" class="app-feedback" role="status"></div></form>
-<p class="app-help">Phiên được giữ trong tab trình duyệt để dùng khi chuyển module. Mật khẩu không được lưu. Đăng xuất để xóa token. API base được chuẩn hóa về /api/his/v1.</p>
+<p class="app-help">Base URL và tài khoản được nhớ trên trình duyệt này. Mật khẩu không được lưu; có thể dùng trình quản lý mật khẩu của trình duyệt. Token và refresh token chỉ giữ trong phiên tab; header tự làm mới nếu server cấp refresh token. Khi refresh token hết hạn/bị thu hồi, cần đăng nhập lại. Đăng xuất để xóa token. API base được chuẩn hóa về /api/his/v1.</p>
 <p class="app-help">LIS/PACS và biên bản dùng dữ liệu nhập tại chỗ; những module gọi HIS API dùng phiên trên header.</p></section></main></body></html>
