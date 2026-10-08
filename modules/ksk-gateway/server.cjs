@@ -12,7 +12,7 @@ function targetPolicy(raw,method,body){
  if(method==='GET'&&read)return u;
  if(method==='POST'&&(login||push))return u;
  if(method==='POST'&&query){const q=JSON.parse(body);if(!Array.isArray(q)||q.length!==1||typeof q[0]!=='string'||!/^\s*SELECT\b/i.test(q[0])||/[;]|--|\/\*/.test(q[0])||/\b(insert|update|delete|merge|drop|alter|create|grant|copy|call|pg_sleep|pg_read_file|dblink)\b/i.test(q[0]))throw Error('Query phải là một SELECT chỉ đọc.');
- const tables=[...q[0].matchAll(/\b(?:FROM|JOIN)\s+([\w.]+)/gi)].map(x=>x[1].toLowerCase());if(!tables.length||tables.some(t=>!['nb_kham_ksk_dv_can_lam_sang','dm_benh_vien','dm_thiet_lap','dm_thiet_lap_chi_tiet'].includes(t)))throw Error('Query nằm ngoài dữ liệu KSK.');return u;}
+ const tables=[...q[0].matchAll(/\b(?:FROM|JOIN)\s+([\w.]+)/gi)].map(x=>x[1].toLowerCase());if(!tables.length||tables.some(t=>!['nb_kham_ksk_dv_can_lam_sang','nb_dv_xet_nghiem_chi_so_con','dm_chi_so_con','dm_dich_vu','dm_benh_vien','dm_thiet_lap','dm_thiet_lap_chi_tiet'].includes(t)))throw Error('Query nằm ngoài dữ liệu KSK.');return u;}
  throw Error('Helper chỉ cho đọc phiếu/query KSK, đăng nhập và push bản tin.');
 }
 async function readBody(req){let n=0,chunks=[];for await(const c of req){n+=c.length;if(n>15*1024*1024)throw Error('Request quá lớn.');chunks.push(c);}return Buffer.concat(chunks).toString('utf8');}
