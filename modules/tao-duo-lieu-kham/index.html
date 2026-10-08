@@ -136,6 +136,14 @@
                     </div>
                 </div>
 
+                <div class="col-md-12">
+                    <label class="form-label" for="khoaTiepDonSelect">Khoa tiếp đón / chỉ định</label>
+                    <select id="khoaTiepDonSelect" class="form-select">
+                        <option value="">-- Chọn khoa --</option>
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="reloadKhoa">Tải lại khoa</button>
+                </div>
+
                 <!-- Dịch vụ khám -->
                 <div class="col-md-6 position-relative">
                     <label class="form-label">Chọn dịch vụ khám</label>
@@ -149,10 +157,8 @@
                     <label class="form-label">Chọn phòng khám</label>
                     <select id="phongKhamSelect" class="form-select">
                         <option value="">-- Chọn phòng --</option>
-                        <option value="157">Phòng khám số 1</option>
-                        <option value="158">Phòng khám số 2</option>
-                        <option value="159">Phòng khám số 3</option>
                     </select>
+                    <small id="phongKhamHint" class="d-block mt-2 text-muted"></small>
                 </div>
 
                 <div class="col-md-6 position-relative">

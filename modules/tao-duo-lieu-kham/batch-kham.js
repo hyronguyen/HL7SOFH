@@ -19,6 +19,8 @@ const els = {
     searchInput: document.getElementById('dichVuKhamSearch'),
     dropdown: document.getElementById('dichVuKhamDropdown'),
     phongSelect: document.getElementById('phongKhamSelect'),
+    khoaSelect: document.getElementById('khoaTiepDonSelect'),
+    phongHint: document.getElementById('phongKhamHint'),
     loopCount: document.getElementById('loopCount'),
     clsCheckBox: document.getElementById('clsCheckBox'),
     baoHiemCheckBox: document.getElementById('baoHiemCheckBox'),
@@ -28,14 +30,57 @@ const els = {
 
 let searchTimer;
 let cachedToken;
+let lookupVersion = 0, khoaVersion = 0, running = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     els.loopCount.value ||= 1;
+    loadKhoa();
 });
+document.getElementById('reloadKhoa').addEventListener('click', loadKhoa);
+els.khoaSelect.addEventListener('change', async () => {
+    lookupVersion++;
+    resetPhongKham();
+    hideDropdown();
+    if (els.searchInput.dataset.id) await reloadPhong();
+});
+window.addEventListener('isofh-session-change', () => {
+    lookupVersion++;
+    delete els.searchInput.dataset.id;
+    els.searchInput.value = '';
+    hideDropdown();
+    resetPhongKham();
+    loadKhoa();
+});
+
+function selectedKhoa() { return Number(els.khoaSelect.value); }
+async function fetchAll(path, params) {
+    const items = [];
+    for (let page = 0; ; page++) {
+        const response = await apiGet(path, { ...params, page, size: 200 });
+        const payload = response.data;
+        const rows = payload.data || [];
+        items.push(...rows);
+        if (payload.totalPages != null ? page + 1 >= payload.totalPages : rows.length < 200) break;
+    }
+    return items;
+}
+async function loadKhoa() {
+    const version = ++khoaVersion;
+    els.khoaSelect.replaceChildren(new Option('-- Chọn khoa --', ''));
+    if (!IsofhApp.session()) return;
+    try {
+        const items = await fetchAll('/dm-khoa/tong-hop', { active: true, dsCoSoKcbId: DEFAULTS.coSoKcbId });
+        if (version !== khoaVersion) return;
+        items.forEach(k => els.khoaSelect.add(new Option(`${k.ma || ''} · ${k.ten}`, k.id)));
+    } catch (error) { if (version === khoaVersion) logError('Lỗi tải khoa', error); }
+}
 
 els.searchInput.addEventListener('input', () => {
     const keyword = els.searchInput.value.trim();
     clearTimeout(searchTimer);
+    const version = ++lookupVersion;
+    delete els.searchInput.dataset.id;
+    resetPhongKham();
 
     if (!keyword) {
         hideDropdown();
@@ -46,6 +91,7 @@ els.searchInput.addEventListener('input', () => {
 
     searchTimer = setTimeout(async () => {
         const data = await fetchDichVuKham(keyword);
+        if (version !== lookupVersion) return;
         renderDropdown(data);
     }, 300);
 });
@@ -57,6 +103,7 @@ document.addEventListener('click', (event) => {
 });
 
 async function runLoop() {
+    if (running) return;
     const loopCount = Number.parseInt(els.loopCount.value, 10);
 
     if (!Number.isInteger(loopCount) || loopCount < 1) {
@@ -64,6 +111,7 @@ async function runLoop() {
         return;
     }
 
+    if (!selectedKhoa()) { alert('Vui lòng chọn khoa tiếp đón / chỉ định'); return; }
     if (!els.searchInput.dataset.id) {
         alert('Vui long chon dich vu kham');
         return;
@@ -74,6 +122,11 @@ async function runLoop() {
         return;
     }
 
+    const controls = [...document.querySelectorAll('input, select, button')];
+    const disabledBefore = controls.map(c => c.disabled);
+    running = true;
+    lookupVersion++;
+    controls.forEach(c => c.disabled = true);
     try {
         const token = await getToken(true);
         log(`Bat dau tao ${loopCount} benh nhan`);
@@ -85,6 +138,9 @@ async function runLoop() {
         log('Hoan tat batch');
     } catch (error) {
         logError('Loi he thong', error);
+    } finally {
+        running = false;
+        controls.forEach((c, i) => c.disabled = disabledBefore[i]);
     }
 }
 
@@ -126,7 +182,9 @@ async function fetchDichVuKham(keyword) {
             active: true,
             timKiem: keyword,
             dsCoSoKcbId: DEFAULTS.coSoKcbId,
-            loaiDichVu: 10
+            loaiDichVu: 10,
+            dsKhoaChiDinhId: selectedKhoa() || undefined,
+            chiDinhTuLoaiDichVu: 200
         });
 
         return response.data.data || [];
@@ -160,8 +218,42 @@ function renderDropdown(items) {
 function selectDichVuKham(item, option) {
     els.searchInput.value = item.ten;
     els.searchInput.dataset.id = item.dichVuId;
-    fillPhongKham(JSON.parse(option.dataset.dsPhongThucHien));
     hideDropdown();
+    reloadPhong();
+}
+
+async function reloadPhong() {
+    const version = ++lookupVersion;
+    const dichVuId = Number(els.searchInput.dataset.id);
+    resetPhongKham();
+    if (!dichVuId || !selectedKhoa()) { els.phongHint.textContent = 'Chọn khoa trước để tìm phòng.'; return; }
+    els.phongHint.textContent = 'Đang tải phòng...';
+    els.phongSelect.disabled = true;
+    try {
+        const response = await apiGet('/dm-dv-ky-thuat/tong-hop', {
+            page: 0, size: 10, active: true, id: dichVuId,
+            dsCoSoKcbId: DEFAULTS.coSoKcbId, loaiDichVu: 10,
+            dsKhoaChiDinhId: selectedKhoa(), chiDinhTuLoaiDichVu: 200
+        });
+        const service = (response.data.data || []).find(d => Number(d.dichVuId || d.id) === dichVuId);
+        if (!service) throw new Error('Không tìm thấy dịch vụ trên server hiện tại. Chọn lại dịch vụ.');
+        let rooms = service.dsPhongThucHien || [];
+        let fallback = false;
+        if (!rooms.length) {
+            fallback = true;
+            rooms = await fetchAll('/dm-phong/tong-hop', {
+                active: true, dsCoSoKcbId: DEFAULTS.coSoKcbId, dsLoaiPhong: 30
+            });
+        }
+        if (version !== lookupVersion) return;
+        fillPhongKham(rooms);
+        els.phongHint.textContent = fallback
+            ? 'Dịch vụ không trả phòng: chọn thủ công từ danh mục phòng khám. BE vẫn kiểm tra khi lưu, không đảm bảo phòng phù hợp dịch vụ.'
+            : 'Phòng theo cấu hình dịch vụ và khoa chỉ định đã chọn.';
+        if (!rooms.length) els.phongHint.textContent = 'Không có phòng khám active trong danh mục cơ sở này.';
+    } catch (error) {
+        if (version === lookupVersion) { els.phongHint.textContent = extractError(error); logError('Lỗi tải phòng', error); }
+    } finally { if (version === lookupVersion) els.phongSelect.disabled = false; }
 }
 
 function fillPhongKham(dsPhong) {
@@ -169,14 +261,16 @@ function fillPhongKham(dsPhong) {
 
     dsPhong.forEach((phong) => {
         const option = document.createElement('option');
-        option.value = phong.phongId;
-        option.textContent = phong.ten;
+        option.value = phong.phongId || phong.id;
+        option.textContent = `${phong.ma || ''} · ${phong.ten}${phong.khoa?.ten ? ' · ' + phong.khoa.ten : ''}`;
         els.phongSelect.appendChild(option);
     });
 }
 
 function resetPhongKham() {
     els.phongSelect.innerHTML = '<option value="">-- Chon phong --</option>';
+    els.phongHint.textContent = '';
+    els.phongSelect.disabled = false;
 }
 
 function hideDropdown() {
@@ -203,7 +297,7 @@ async function taoDotDieuTri(token, index) {
                 diaChi: 'Nhi Binh, Ho Chi Minh'
             },
             quayTiepDonId: DEFAULTS.quayTiepDonId,
-            khoaId: DEFAULTS.khoaId,
+            khoaId: selectedKhoa(),
             hienTrangCongDan: 1,
             uuTien: Math.random() < 0.2,
             danTocId: 2,
@@ -266,7 +360,7 @@ async function keDichVuKham(token, patient) {
                 chiDinhTuDichVuId: patient.id,
                 chiDinhTuLoaiDichVu: 200,
                 loaiDichVu: 10,
-                khoaChiDinhId: DEFAULTS.khoaId,
+                khoaChiDinhId: selectedKhoa(),
                 bacSiChiDinhId: DEFAULTS.bacSiId,
                 thoiGianThucHien: buildServiceTime(patient, 1)
             },
@@ -298,7 +392,7 @@ async function keNhieuDichVuCdha(token, patient, dvKhamId, danhSachDichVu) {
                     chiDinhTuDichVuId: dvKhamId,
                     chiDinhTuLoaiDichVu: 10,
                     loaiDichVu: 30,
-                    khoaChiDinhId: DEFAULTS.khoaId,
+                    khoaChiDinhId: selectedKhoa(),
                     loaiHinhThanhToanId: null,
                     ghiChu: '',
                     nguonKhacId: null,
@@ -353,7 +447,7 @@ async function keThuoc(token, patientId, dvKhamId) {
                 soLuong: 1,
                 chiDinhTuDichVuId: dvKhamId,
                 chiDinhTuLoaiDichVu: 10,
-                khoaChiDinhId: DEFAULTS.khoaId,
+                khoaChiDinhId: selectedKhoa(),
                 loaiDichVu: 90,
                 tuTra: null,
                 khongTinhTien: false,

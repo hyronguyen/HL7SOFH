@@ -427,6 +427,13 @@ tr.missing td {
   background: var(--code);
 }
 
+.child-demo-panel { margin: 16px 0; padding: 14px; border: 1px solid #cbd5e1; border-radius: 12px; }
+.child-demo-panel summary { cursor: pointer; font-weight: 700; }
+.child-demo-panel p { font-size: 13px; line-height: 1.5; }
+.child-result-scroll { overflow: auto; margin-top: 12px; }
+.child-result-table { width: 100%; min-width: 950px; }
+.child-result-table input { width: 100%; min-width: 90px; box-sizing: border-box; }
+.child-result-table td:first-child { min-width: 140px; }
 .knowledge-panel p {
   margin-bottom: 8px;
   color: var(--text);

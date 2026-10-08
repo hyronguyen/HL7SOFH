@@ -9,7 +9,6 @@
  function normalizeBase(input){
   const url=new URL(input.trim());
   if(!['https:','http:'].includes(url.protocol)||url.username||url.password||url.search||url.hash)throw Error('Base URL phải là HTTP/HTTPS, không chứa tài khoản, query hoặc #.');
-  if(url.protocol!=='https:'&&!['localhost','127.0.0.1','[::1]'].includes(url.hostname))throw Error('Dùng HTTPS để bảo vệ thông tin đăng nhập.');
   let path=url.pathname.replace(/\/+$/,'');
   if(!path.endsWith('/api/his/v1'))path+='/api/his/v1';
   return url.origin+path;
@@ -17,6 +16,9 @@
  function isSafeBase(base){
   const host=new URL(base).hostname.toLowerCase();
   return /^(?:api-)?sakura-(?:test|stable)\.isofh\.vn$/.test(host);
+ }
+ function confirmHttp(base){
+  if(new URL(base).protocol==='http:'&&!window.confirm('Bạn đang kết nối qua HTTP: thông tin đăng nhập và token không được mã hóa khi truyền. Chỉ tiếp tục trên mạng tin cậy. Bạn có muốn tiếp tục?'))throw Error('Đã hủy kết nối HTTP.');
  }
  function expiry(token){try{const claim=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return typeof claim.exp==='number'?claim.exp*1000:null;}catch{return null;}}
  function read(){try{const s=JSON.parse(sessionStorage.getItem(KEY)||'null');if(s&&s.base&&s.token&&s.account){normalizeBase(s.base);return s;}}catch{}return null;}
@@ -34,18 +36,21 @@
   document.getElementById('appServer').textContent=s?s.base:'Chưa chọn server';
   document.getElementById('appAccount').textContent=s?`Tài khoản: ${s.account}${s.expiresAt&&s.expiresAt<=Date.now()?' · Hết hạn':''}`:'Chưa đăng nhập';
   document.getElementById('appWarning').hidden=!(s&&!isSafeBase(s.base));
+  document.getElementById('appWarning').textContent=(s&&!isSafeBase(s.base)?'⚠ Bạn đang trên server thật':'')+(s&&new URL(s.base).protocol==='http:'?' · HTTP không mã hóa thông tin đăng nhập / token':'');
+  if(s&&new URL(s.base).protocol==='http:'){document.getElementById('appWarning').hidden=false;h.dataset.risk='true';}
   document.getElementById('appLogout').hidden=!s;
  }
  function store(s){sessionStorage.setItem(KEY,JSON.stringify(s));current=s;authVersion++;refreshRetryAt=0;try{localStorage.setItem(PROFILE_KEY,JSON.stringify({base:s.base,account:s.account}));}catch{}render();window.dispatchEvent(new CustomEvent('isofh-session-change'));}
  function logout(){authVersion++;current=null;sessionStorage.removeItem(KEY);localStorage.removeItem('token');render();window.dispatchEvent(new CustomEvent('isofh-session-change'));}
  async function login(base,account,password){
   const normalized=normalizeBase(base);if(!account.trim()||!password)throw Error('Nhập tài khoản và mật khẩu / mã băm đăng nhập HIS.');
+  confirmHttp(normalized);
   const response=await fetch(normalized+'/auth/login',{method:'POST',headers:{'Content-Type':'application/json','Accept-Language':'vi'},body:JSON.stringify({taiKhoan:account.trim(),matKhau:password}),signal:AbortSignal.timeout(30000)});
   const payload=await response.json();const token=payload?.data?.access_token;
   if(!response.ok||(payload.code!==undefined&&payload.code!==0)||!token)throw Error(payload.message||`Đăng nhập thất bại (HTTP ${response.status}).`);
   store({base:normalized,account:account.trim(),token,refreshToken:payload.data.refresh_token||null,expiresAt:expiry(token)||(payload.data.expires_in?Date.now()+Number(payload.data.expires_in)*1000:null)});return session();
  }
- function useToken(base,account,token){const raw=token.trim().replace(/^Bearer\s+/i,'');if(!raw||!account.trim())throw Error('Nhập token và tên tài khoản để nhận diện phiên.');const end=expiry(raw);if(end&&end<=Date.now())throw Error('Token đã hết hạn.');store({base:normalizeBase(base),account:account.trim(),token:raw,expiresAt:end});return session();}
+ function useToken(base,account,token){const raw=token.trim().replace(/^Bearer\s+/i,'');if(!raw||!account.trim())throw Error('Nhập token và tên tài khoản để nhận diện phiên.');const end=expiry(raw);if(end&&end<=Date.now())throw Error('Token đã hết hạn.');const normalized=normalizeBase(base);confirmHttp(normalized);store({base:normalized,account:account.trim(),token:raw,expiresAt:end});return session();}
  async function request(path,options={}){
   const s=await readySession(),version=authVersion;if(!path.startsWith('/')||path.startsWith('//')||/[\\]/.test(path)||path.split('?')[0].split('/').some(x=>x==='..'||x==='.'))throw Error('API path không hợp lệ.');
   const url=new URL(s.base+path);if(!url.href.startsWith(s.base+'/'))throw Error('API nằm ngoài base URL đang đăng nhập.');

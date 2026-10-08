@@ -71,6 +71,21 @@
         <button id="copyBtn" type="button">Copy output</button>
       </div>
 
+      <details class="child-demo-panel">
+        <summary>Tự tạo chỉ số con mới · Demo trả kết quả</summary>
+        <p>Dán bản tin chỉ định, đọc cấu hình dịch vụ rồi thêm chỉ số. Chỉ cho chọn dịch vụ bật “Tự tạo chỉ số con”. Chưa tạo danh mục hoặc ghi HIS khi sinh demo. Mã đã tồn tại trên xét nghiệm sẽ được cập nhật, không tạo thêm dòng mới.</p>
+        <button id="loadChildServicesBtn" type="button">Đọc dịch vụ và kiểm tra tự tạo chỉ số con</button>
+        <p id="childDemoStatus" role="status"></p>
+        <label for="childServiceSelect">Dịch vụ xét nghiệm cha</label>
+        <select id="childServiceSelect"><option value="">-- Đọc cấu hình trước --</option></select>
+        <button id="addChildResultBtn" type="button" disabled>+ Thêm chỉ số con</button>
+        <div class="child-result-scroll"><table class="child-result-table">
+          <thead><tr><th>Dịch vụ cha</th><th>Mã chỉ số</th><th>Tên chỉ số</th><th>Kiểu</th><th>Kết quả</th><th>Đơn vị</th><th>Tham chiếu</th><th>Phân loại</th><th></th></tr></thead>
+          <tbody id="childResultRows"></tbody>
+        </table></div>
+        <p>Các dịch vụ có chỉ số nhập ở đây sẽ dùng các dòng này thay cho kết quả demo mặc định. Bấm “Demo Trả kết quả” để sinh. Muốn gửi: copy Output vào Input, chọn “Trả kết quả” trong khu vực API, bấm “Dùng HL7 đầu vào làm payload”, xem lại và xác nhận gửi.</p>
+      </details>
+
       <label for="outputData">Output JSON</label>
       <textarea id="outputData" spellcheck="false" readonly></textarea>
 

@@ -54,6 +54,8 @@ const DEFAULT_KNOWLEDGE = {
 
 let hl7Knowledge = DEFAULT_KNOWLEDGE;
 let lastRenderState = null;
+let childDemoContext = null;
+let childDemoVersion = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadKnowledge();
@@ -73,6 +75,10 @@ async function loadKnowledge() {
 }
 
 function bindControls() {
+  document.getElementById('loadChildServicesBtn').addEventListener('click', loadChildDemoServices);
+  document.getElementById('addChildResultBtn').addEventListener('click', addChildDemoRow);
+  document.getElementById('inputData').addEventListener('input', resetChildDemo);
+  window.addEventListener('isofh-session-change', resetChildDemo);
   document.getElementById("checkBtn").addEventListener("click", checkMessage);
   document.getElementById("demoResultBtn").addEventListener("click", convertOMLtoORU);
   document.getElementById("demoStatusBtn").addEventListener("click", generateStatusUpdate);
@@ -497,19 +503,148 @@ function splitIdentifier(value) {
   };
 }
 
+function childSessionKey() {
+  const s = window.IsofhApp?.session();
+  return s ? JSON.stringify([s.base, s.account, s.token]) : '';
+}
+
+function resetChildDemo() {
+  childDemoVersion++;
+  childDemoContext = null;
+  document.getElementById('childResultRows').replaceChildren();
+  document.getElementById('childServiceSelect').replaceChildren(new Option('-- Đọc cấu hình trước --', ''));
+  document.getElementById('addChildResultBtn').disabled = true;
+  document.getElementById('childDemoStatus').textContent = 'Đọc lại cấu hình khi đầu vào hoặc phiên thay đổi.';
+}
+
+async function loadChildDemoServices() {
+  resetChildDemo();
+  const version = childDemoVersion;
+  const button = document.getElementById('loadChildServicesBtn');
+  button.disabled = true;
+  const status = document.getElementById('childDemoStatus');
+  status.textContent = 'Đang kiểm tra cấu hình dịch vụ...';
+  try {
+    const raw = readInputData(), parsed = parseHl7(raw), sessionKey = childSessionKey();
+    if (!sessionKey) throw new Error('Đăng nhập HIS trên header để kiểm tra cấu hình.');
+    const services = new Map(), notes = [];
+    for (const group of parsed.orders) {
+      const id = splitIdentifier(getValue(group.obr, 2, 1)).id;
+      if (!/^\d+$/.test(id || '')) throw new Error('OBR-2 phải có ID xét nghiệm hợp lệ.');
+      if (services.has(id)) continue;
+      // HIS has one patient-examination ID, even if OML contains multiple child orders.
+      const nb = (await IsofhApp.json('/nb-dv-xet-nghiem/tong-hop/' + id)).data;
+      const dichVuId = nb?.dichVuId || nb?.nbDichVu?.dichVuId;
+      if (!dichVuId) throw new Error('Không tìm thấy dichVuId của xét nghiệm ' + id);
+      const dm = (await IsofhApp.json('/dm-dv-ky-thuat/' + dichVuId)).data;
+      services.set(id, { id, group, code: getValue(group.obr, 4, 4) || getValue(group.obr, 4, 1),
+        name: dm?.ten || nb?.tenDichVu || getValue(group.obr, 4, 2), enabled: dm?.taoChiSoCon === true });
+      notes.push(id + ': ' + (dm?.taoChiSoCon === true ? 'cho phép tạo chỉ số con' : 'không bật tự tạo chỉ số con'));
+    }
+    if (version !== childDemoVersion || readInputData() !== raw || childSessionKey() !== sessionKey) return;
+    childDemoContext = { raw, sessionKey, services };
+    const select = document.getElementById('childServiceSelect');
+    select.replaceChildren(new Option('-- Chọn dịch vụ --', ''));
+    for (const service of services.values()) {
+      if (service.enabled) select.add(new Option(`${service.id} · ${service.code} · ${service.name}`, service.id));
+    }
+    document.getElementById('addChildResultBtn').disabled = ![...services.values()].some(s => s.enabled);
+    status.textContent = notes.length ? notes.join(' | ') : 'Không có xét nghiệm trong đầu vào.';
+  } catch (error) { if (version === childDemoVersion) status.textContent = 'Lỗi: ' + error.message; }
+  finally { button.disabled = false; }
+}
+
+function requireChildDemoContext() {
+  if (!childDemoContext || childDemoContext.raw !== readInputData() || childDemoContext.sessionKey !== childSessionKey()) {
+    throw new Error('Đầu vào/phiên đã thay đổi. Đọc lại cấu hình chỉ số con.');
+  }
+  return childDemoContext;
+}
+
+function addChildDemoRow() {
+  try {
+    const context = requireChildDemoContext();
+    const service = context.services.get(document.getElementById('childServiceSelect').value);
+    if (!service?.enabled) throw new Error('Chọn dịch vụ đã xác nhận bật tự tạo chỉ số con.');
+    const row = document.createElement('tr');
+    row.dataset.parentId = service.id;
+    const parent = document.createElement('td'); parent.textContent = `${service.id} · ${service.name}`; row.append(parent);
+    for (const [key, label] of [['code','Mã chỉ số'], ['name','Tên chỉ số'], ['type','Kiểu'], ['value','Kết quả'], ['unit','Đơn vị'], ['range','Tham chiếu'], ['flag','Phân loại']]) {
+      const cell = document.createElement('td');
+      const input = document.createElement(key === 'type' || key === 'flag' ? 'select' : 'input');
+      input.dataset.key = key; input.setAttribute('aria-label', label);
+      if (key === 'type' || key === 'flag') (key === 'type' ? ['ST','NM','TX'] : ['N','L','H','C']).forEach(v => input.add(new Option(v,v)));
+      else { input.placeholder = label; input.type = 'text'; }
+      cell.append(input); row.append(cell);
+    }
+    const cell = document.createElement('td'), remove = document.createElement('button');
+    remove.type = 'button'; remove.textContent = 'Xóa'; remove.onclick = () => row.remove(); cell.append(remove); row.append(cell);
+    document.getElementById('childResultRows').append(row);
+  } catch (error) { document.getElementById('childDemoStatus').textContent = error.message; }
+}
+
+function customChildResults() {
+  const rows = [...document.getElementById('childResultRows').querySelectorAll('tr')];
+  if (!rows.length) return new Map();
+  const context = requireChildDemoContext(), result = new Map(), seen = new Set();
+  for (const row of rows) {
+    const service = context.services.get(row.dataset.parentId);
+    if (!service?.enabled) throw new Error('Dịch vụ không bật tự tạo chỉ số con.');
+    const value = { parentId: service.id };
+    row.querySelectorAll('[data-key]').forEach(input => value[input.dataset.key] = input.value.trim());
+    if (!value.code || !value.name || !value.value) throw new Error('Mỗi chỉ số cần mã, tên và kết quả.');
+    if (/[|^~\\&\r\n]/.test(value.code)) throw new Error('Mã chỉ số không được chứa dấu phân cách HL7.');
+    if (value.type === 'NM' && !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value.value)) throw new Error('Kết quả NM phải là số, dùng dấu chấm thập phân.');
+    const key = service.id + ':' + value.code;
+    if (seen.has(key)) throw new Error('Trùng mã chỉ số trong cùng xét nghiệm: ' + value.code);
+    seen.add(key);
+    if (!result.has(service.id)) result.set(service.id, []);
+    result.get(service.id).push(value);
+  }
+  return result;
+}
+
+function escapeDemoHl7(value) {
+  return String(value || '').replace(/\\/g, '\\E\\').replace(/\|/g, '\\F\\').replace(/\^/g, '\\S\\')
+    .replace(/~/g, '\\R\\').replace(/&/g, '\\T\\').replace(/\r\n|\r|\n/g, '\\.br\\');
+}
+
 function convertOMLtoORU() {
   try {
     const parsed = parseHl7(readInputData());
-    const timestamp = getValue(parsed.msh, 7) || hl7Now();
+    const timestamp = hl7Now();
+    const custom = customChildResults(), emitted = new Set();
     const output = [];
 
     const msh = [...parsed.msh.fields];
     setValue(msh, "MSH", 9, "ORU^R01^ORU_R01");
+    setValue(msh, "MSH", 7, timestamp);
+    setValue(msh, "MSH", 12, "2.5");
     output.push(msh.join("|"));
     if (parsed.pid) output.push(parsed.pid.raw);
     if (parsed.pv1) output.push(parsed.pv1.raw);
 
     parsed.orders.forEach((group, index) => {
+      const parentId = splitIdentifier(getValue(group.obr, 2, 1)).id;
+      if (custom.has(parentId)) {
+        if (emitted.has(parentId)) return;
+        emitted.add(parentId);
+        const parentCode = getValue(group.obr, 4, 4) || getValue(group.obr, 4, 1);
+        for (const [childIndex, child] of custom.get(parentId).entries()) {
+          const orc = group.orc ? [...group.orc.fields] : ['ORC'];
+          const obr = [...group.obr.fields];
+          setValue(orc, 'ORC', 1, 'SC');
+          setValue(orc, 'ORC', 2, parentId);
+          setValue(obr, 'OBR', 1, childIndex + 1);
+          setValue(obr, 'OBR', 2, parentId);
+          setValue(obr, 'OBR', 4, `${escapeDemoHl7(child.code)}^${escapeDemoHl7(child.name)}^^${parentCode}`);
+          output.push(orc.join('|'), obr.join('|'));
+          output.push(buildObx(1, child.type, child.code, escapeDemoHl7(child.name), escapeDemoHl7(child.value), '^' + escapeDemoHl7(child.unit), escapeDemoHl7(child.range), child.flag, timestamp));
+          output.push('NTE|1||Chi so con demo tu tool LIS');
+          if (group.spm) output.push(group.spm.raw);
+        }
+        return;
+      }
       const orc = group.orc ? [...group.orc.fields] : ["ORC"];
       const obr = group.obr ? [...group.obr.fields] : ["OBR"];
       const serviceCode = getValue(group.obr, 4, 1) || `XN${index + 1}`;

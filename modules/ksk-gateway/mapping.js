@@ -1,5 +1,5 @@
 // Adult XML whitelist ported from local KskXmlBuilder; no runtime eval.
-// Source SHA256: 80962fa64fd9e37b77054003ece37f1cc482172ef66b6fb3ba800fc7641e9111
+
 export function adultBlocks(dto, benhVien, entity, h) {
 const {giaTriXmlKskNguoiLon,dinhDangNgaySinhXmlKsk,dinhDangNgayXmlKsk,dinhDangNgayGioXmlKsk,
 firstNonBlank,maNgheNghiepCap2DayCongVneid,bloodName,maCskcbXmlKsk,maGlnXmlKsk,
